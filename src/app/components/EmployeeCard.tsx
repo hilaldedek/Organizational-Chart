@@ -2,7 +2,8 @@
 "use client";
 
 import React, { DragEvent } from "react";
-import { EmployeeCardProps } from "../types/EmployeeCard";
+import { EmployeeCardProps } from "../types/employeeCard";
+
 
 
 

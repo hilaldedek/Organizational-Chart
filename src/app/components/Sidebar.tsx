@@ -4,7 +4,7 @@ import Reac, { useEffect, useState } from "react";
 import { Department, Employee } from "../types/orgChart";
 import { toast } from "react-toastify";
 import EmployeeCard from "./EmployeeCard";
-import { SidebarProps } from "../types/Sidebar";
+import { SidebarProps } from "../types/sidebar";
 
 const Sidebar: React.FC<SidebarProps> = ({ departments, setDepartments }) => {
   const [unassignedEmployees, setUnassignedEmployees] = useState<Employee[]>(

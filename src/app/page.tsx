@@ -12,7 +12,7 @@ export default function HomePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
  
   return (
-    <div className="flex font-(family-name:--font-poppins)">
+    <div className="flex font-(family-name:--font-poppins) w-full h-screen">
       <ReactFlowProvider>
         <OrgChart
         />
