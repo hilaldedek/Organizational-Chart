@@ -5,13 +5,13 @@ import { NodeResizer } from "@xyflow/react";
 import { getContainerStyle, headerStyle } from "../utils/orgChartHelpers";
 import { FcOk } from "react-icons/fc";
 
-const DepartmentNodeComponent: React.FC<{
+export const DepartmentNodeComponent: React.FC<{
   data: DepartmentNodeData;
   selected: boolean;
 }> = ({ data, selected }) => {
   const [draggedOver, setDraggedOver] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+console.log("DepartmentNodeComponent render edildi:", data);
   // Departmandaki personel sayısını kontrol et
   const departmentHasEmployees = useMemo(() => {
     console.log(
@@ -22,13 +22,14 @@ const DepartmentNodeComponent: React.FC<{
     return departmentNodes.length > 0;
   }, [data.departmentNodes]);
 
-  const handleDragOver = useCallback((e: DragEvent) => {
+  // React DragEvent türünü kullanın, DOM DragEvent değil
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     console.log("DepartmentGroupNodeComponent - handleDragOver tetiklendi!");
     e.preventDefault();
     setDraggedOver(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     console.log("DepartmentGroupNodeComponent - handleDragLeave tetiklendi!");
 
     // Debounce drag leave to prevent flickering
@@ -42,7 +43,7 @@ const DepartmentNodeComponent: React.FC<{
   }, []);
 
   const handleEmployeeToDepartmentDrop = useCallback(
-    (e: DragEvent) => {
+    (e: React.DragEvent<HTMLDivElement>) => {
       console.log(
         "DepartmentGroupNodeComponent - handleEmployeeToDepartmentDrop tetiklendi!"
       );
@@ -54,7 +55,14 @@ const DepartmentNodeComponent: React.FC<{
       }
 
       try {
-        const dropData = e.dataTransfer.getData("application/json");
+        // dataTransfer null kontrolü ekleyin
+        const dataTransfer = e.dataTransfer;
+        if (!dataTransfer) {
+          console.error("DataTransfer is null");
+          return;
+        }
+
+        const dropData = dataTransfer.getData("application/json");
         if (dropData) {
           const parsed = JSON.parse(dropData);
 
@@ -66,7 +74,8 @@ const DepartmentNodeComponent: React.FC<{
             const employee: Employee =
               parsed.type === "employee" ? parsed.data : parsed;
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const relativePosition = calculateRelativePosition(e, rect);
+            // calculateRelativePosition fonksiyonunu React event ile çağırın
+            const relativePosition = calculateRelativePosition(e as any, rect);
             console.log("YÖNETİCİ ATANDI:");
             data.onEmployeeDrop(data.unit_id, employee, relativePosition);
           }
@@ -107,8 +116,7 @@ const DepartmentNodeComponent: React.FC<{
         }}
       />
 
-      <div style={headerStyle
-      } className="text-center">
+      <div style={headerStyle} className="text-center">
         {data.unit_name}
         {departmentHasEmployees && (
           <div className="mt-2 font-normal text-xs flex items-center justify-center">

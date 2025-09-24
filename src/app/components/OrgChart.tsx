@@ -1,15 +1,22 @@
-"use client";
+import { ReactFlowProvider } from "@xyflow/react";
+import { OrgChartInnerProps } from "../types/orgChart";
+import OrgChartInner from "./OrgChartInner";
 
-import React, { useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 
-
-
-export default function OrgChart() {
- 
+const OrgChart: React.FC<OrgChartInnerProps> = ({ newDepartment }) => {
+  const showToast = (type: "success" | "error" | "warning", message: string) => {
+    if (type === "success") toast.success(message);
+    else if (type === "error") toast.error(message);
+    else if (type === "warning") toast.warning(message);
+  };
 
   return (
-    <div className="flex font-(family-name:--font-poppins)">
-      
-    </div>
+    <ReactFlowProvider>
+      <OrgChartInner newDepartment={newDepartment} showToast={showToast} />
+      <ToastContainer position="top-right" autoClose={3000} />
+    </ReactFlowProvider>
   );
-}
+};
+
+export default OrgChart;

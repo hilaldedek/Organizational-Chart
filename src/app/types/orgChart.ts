@@ -116,3 +116,15 @@ export interface EmployeeUpdateHooksParams {
   setNodes: React.Dispatch<React.SetStateAction<any[]>>;
   setEdges: React.Dispatch<React.SetStateAction<any[]>>;
 }
+
+export interface UseOrgChartParams {
+  newDepartment: Department[];
+  handleEmployeeDragStart: (id: string) => void;
+  handleEmployeeDrop: (targetId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
+  handleDepartmentEmployeeDrop: (
+    unitId: string,
+    employee: Employee,
+    position: { x: number; y: number }
+  ) => void;
+  showToast: (type: "error" | "warning" | "success", message: string) => void;
+}

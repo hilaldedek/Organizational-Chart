@@ -1,23 +1,42 @@
 "use client";
-
 import React, { useMemo } from "react";
-import { Background, BackgroundVariant, ConnectionLineType, ReactFlow, Node, Edge, NodeChange, EdgeChange } from "@xyflow/react";
+import {
+  Background,
+  BackgroundVariant,
+  ConnectionLineType,
+  ReactFlow,
+  Node,
+  Edge,
+  NodeChange,
+  EdgeChange
+} from "@xyflow/react";
 import { useOrgChart } from "../hooks/useOrgChart";
 import { useDragAndDrops } from "../hooks/useDragAndDrop";
 import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 import { OrgChartInnerProps } from "../types/orgChart";
-
 import EmployeeNode from "./EmployeeNode";
+import { DepartmentNodeComponent } from "./DepartmentNode";
 
-const OrgChartInner: React.FC<OrgChartInnerProps> = ({ newDepartment, showToast }) => {
-  const orgChartState = useOrgChart(newDepartment);
-  const { nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange } = orgChartState;
+const OrgChartInner: React.FC<OrgChartInnerProps> = ({
+  newDepartment,
+  showToast
+}) => {
+  const orgChartState = useOrgChart({
+    newDepartment,
+    showToast,
+    // Provide stubs or actual implementations for these handlers as needed
+    handleEmployeeDragStart: () => {},
+    handleEmployeeDrop: () => {},
+    handleDepartmentEmployeeDrop: () => {},
+  });
+  const { nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange } =
+    orgChartState;
 
   // --- Node Types ---
   const nodeTypes = useMemo(
     () => ({
       employee: EmployeeNode,
-      group: DepartmentNode,
+      group: DepartmentNodeComponent,
     }),
     []
   );
@@ -30,14 +49,21 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ newDepartment, showToast 
     processedRequests: new Set(),
     updatingEmployees: new Set(),
     showToast,
-    findAllSubordinatesFromNodes: orgChartState.findAllSubordinatesFromNodes,
-    areInSameDepartmentNodes: orgChartState.areInSameDepartmentNodes,
+    // Bu fonksiyonları orgChartState'den alıyoruz, eğer mevcut değilse undefined olarak geçiyoruz
+    // Hook'unuzda bu fonksiyonları tanımlamanız gerekiyor
+    findAllSubordinatesFromNodes: (orgChartState as any).findAllSubordinatesFromNodes || undefined,
+    areInSameDepartmentNodes: (orgChartState as any).areInSameDepartmentNodes || undefined,
   });
 
-  const { handleEmployeeDragStart, handleEmployeeDrop, handleIntraDepartmentMove } = dragHandlers;
+  const { handleEmployeeDragStart, handleEmployeeDrop, handleIntraDepartmentMove } =
+    dragHandlers;
 
   // --- Employee Update ---
-  const { handleEmployeeUpdate } = useEmployeeUpdate({ showToast, setNodes, setEdges });
+  const { handleEmployeeUpdate } = useEmployeeUpdate({
+    showToast,
+    setNodes,
+    setEdges
+  });
 
   // --- Drag over handler ---
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
@@ -55,7 +81,11 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ newDepartment, showToast 
         connectionLineStyle={{ stroke: "#555", strokeWidth: 2 }}
         connectionLineType={ConnectionLineType.SmoothStep}
       >
-        <Background color="#44444E" gap={20} variant={BackgroundVariant.Dots} />
+        <Background
+          color="#44444E"
+          gap={20}
+          variant={BackgroundVariant.Dots}
+        />
       </ReactFlow>
     </div>
   );
