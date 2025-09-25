@@ -88,7 +88,7 @@ export interface UseOrgChartReturn {
 export interface UpdateEmployeeParams {
   person_id: string;
   drop_department_id: string;
-  drop_employee_id?: string;
+  drop_employee_id: string;
 }
 
 export interface DragHooksParams {

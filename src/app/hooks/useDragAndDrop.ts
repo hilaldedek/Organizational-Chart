@@ -27,45 +27,44 @@ export const useDragAndDrops = ({
     setNodes,
   } = useOrgChartStore();
   
-  const { handleEmployeeUpdate, handleAddEmployeeToDepartment } = useEmployeeUpdate({ showToast });
+  const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate } = useEmployeeUpdate({ showToast });
 
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
   }, []);
 
-  // Departman içi taşıma (sadece manager değişir)
+ 
   const handleIntraDepartmentMove = useCallback(
     async (sourceNodeId: string, targetNodeId: string, draggedEmployee: Employee) => {
+      const { nodes: currentNodes } = useOrgChartStore.getState();
+const targetNode = currentNodes.find((n) => n.id === targetNodeId);
+if(!targetNode){showToast("error","Hedef node bulunamadı."); return;}
+const departmentId= targetNode.parentId?.toString();
+if(!departmentId){
+  showToast("error","Hedef departman bulunamadı."); return;
+}
+
       const requestId = `intra-dept-${sourceNodeId}-${targetNodeId}`;
       
-      if (processedRequests.has(requestId) || updatingEmployees.has(sourceNodeId)) {
-        console.log("İşlem zaten yapılıyor veya tamamlanmış:", requestId);
-        return;
-      }
+      
+      if (processedRequests.has(requestId) || updatingEmployees.has(sourceNodeId)) return;
 
       try {
         addProcessedRequest(requestId);
-
-        // UI'ı hemen güncelle (optimistic update)
-        updateEmployeeInNodes(sourceNodeId, targetNodeId);
-        updateEdgesForEmployee(sourceNodeId, targetNodeId);
-
-        // API çağrısı - departman içi manager güncellemesi
-        const result = await handleEmployeeUpdate({
+const result = await handleIntraDepartmentManagerUpdate({
           person_id: sourceNodeId,
-          drop_department_id: draggedEmployee.department_id?.toString() ?? "",
+          drop_department_id: departmentId,
           drop_employee_id: targetNodeId,
         });
 
-        if (!result.success) {
-          showToast("error", "Güncelleme başarısız oldu, sayfa yenilenecek.");
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error("Intra-department move hatası:", error);
-        showToast("error", "Taşıma işlemi başarısız oldu.");
-        window.location.reload();
-      } finally {
+        if(!result?.success){showToast("error","Güncelleme başarısız."); return;}
+        // Optimistic UI
+        updateEmployeeInNodes(sourceNodeId, targetNodeId);
+        updateEdgesForEmployee(sourceNodeId, targetNodeId);
+
+
+      } 
+        finally {
         setTimeout(() => {
           removeProcessedRequest(requestId);
         }, 1000);
@@ -74,7 +73,7 @@ export const useDragAndDrops = ({
     [
       processedRequests, 
       updatingEmployees, 
-      handleEmployeeUpdate, 
+      handleIntraDepartmentManagerUpdate, 
       updateEmployeeInNodes, 
       updateEdgesForEmployee,
       addProcessedRequest,

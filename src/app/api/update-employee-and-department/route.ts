@@ -5,7 +5,35 @@ import pool from "../../../../lib/db";
 export async function PUT(req: Request) {
   const client = await pool.connect();
   try {
-    const { person_id, drop_department_id, drop_employee_id } = await req.json();
+    // İstek gövdesinin var olup olmadığını kontrol et
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json({ 
+        message: "Content-Type application/json olmalıdır." 
+      }, { status: 400 });
+    }
+
+    // Request body'nin boş olup olmadığını kontrol et
+    const body = await req.text();
+    if (!body || body.trim() === '') {
+      return NextResponse.json({ 
+        message: "İstek gövdesi boş olamaz." 
+      }, { status: 400 });
+    }
+
+    // JSON parse işlemini try-catch ile sarmalayın
+    let parsedData;
+    try {
+      parsedData = JSON.parse(body);
+    } catch (parseError) {
+      console.error("JSON parse hatası:", parseError);
+      return NextResponse.json({ 
+        message: "Geçersiz JSON formatı." 
+      }, { status: 400 });
+    }
+
+    const { person_id, drop_department_id, drop_employee_id } = parsedData;
+    console.log("person_id, drop_department_id, drop_employee_id", person_id, drop_department_id, drop_employee_id);
 
     if (!person_id || !drop_department_id) {
       return NextResponse.json({ message: "Gerekli alanlar eksik." }, { status: 400 });
@@ -25,8 +53,11 @@ export async function PUT(req: Request) {
     }
 
     const currentDepartmentId = empQuery.rows[0].department_id;
+    const dropDeptId = String(drop_department_id).trim();
+    console.log("Current Department ID:", currentDepartmentId);
+    console.log("Drop Department ID:", dropDeptId);
 
-    if (currentDepartmentId !== parseInt(drop_department_id)) {
+    if (currentDepartmentId !== dropDeptId) {
       await client.query("ROLLBACK");
       return NextResponse.json(
         { message: "Bu API sadece departman içi manager güncellemesi için kullanılabilir." },

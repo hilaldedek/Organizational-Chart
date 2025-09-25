@@ -131,6 +131,16 @@ export const useOrgChartStore = create<OrgChartState>()(
       
       resetStore: () => set(initialState),
     }),
-    { name: 'org-chart-store' }
+    { name: 'org-chart-store',
+      partialize:(state:OrgChartState)=>({
+        nodes:state.nodes,
+        edges:state.edges,
+        departments:state.departments,
+        ceo:state.ceo,
+        allEmployees: state.allEmployees,
+        loading: state.loading,
+        isLoading: state.isLoading
+      })
+     }
   )
 );

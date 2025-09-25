@@ -26,8 +26,14 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
 
       try {
         addUpdatingEmployee(person_id);
+const { nodes: currentNodes } = useOrgChartStore.getState();
+const targetNode = currentNodes.find((n) => n.id === drop_employee_id);
+if (!targetNode) {
+showToast("error", "Hedef node bulunamadı.");
+  return;
+     }
         
-        const response = await fetch("/api/update-employee-and-manager", {
+        const response = await fetch("/api/update-employee-and-department", {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",
@@ -109,37 +115,12 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
 
   // Hangi API'yi kullanacağını belirleyen ana fonksiyon
   const handleEmployeeUpdate = useCallback(
-    async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
-      // Çalışanın mevcut bilgilerini nodes'tan al
-      const currentEmployee = nodes.find(node => node.id === person_id);
-      
-      if (!currentEmployee || !currentEmployee.data) {
-        showToast("error", "Personel bilgileri bulunamadı.");
-        return { success: false };
-      }
+     async ({ person_id, drop_department_id, drop_employee_id }:UpdateEmployeeParams) => {
+           
 
-      const currentDepartmentId = currentEmployee.data.department_id;
-      const newDepartmentId = parseInt(drop_department_id);
-
-      // Aynı departman içinde mi kontrol et
-      if (currentDepartmentId === newDepartmentId) {
-        // Departman içi manager güncelleme
-        console.log("Departman içi manager güncellemesi yapılıyor...");
-        return await handleIntraDepartmentManagerUpdate({
-          person_id,
-          drop_department_id,
-          drop_employee_id
-        });
-      } else {
-        // Farklı departmana ekleme
-        console.log("Personel farklı departmana ekleniyor...");
-        return await handleAddEmployeeToDepartment({
-          person_id,
-          drop_department_id,
-          drop_employee_id
-        });
-      }
-    },
+           return await handleIntraDepartmentManagerUpdate({
+             person_id, drop_department_id, drop_employee_id
+           });},
     [
       nodes, 
       showToast, 

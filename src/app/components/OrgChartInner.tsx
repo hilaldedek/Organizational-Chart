@@ -52,7 +52,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
 
   const areInSameDepartmentNodes = useCallback(
     (sourceNode: Node, targetNode: Node): boolean => {
-      return sourceNode.parentId === targetNode.parentId;
+      return sourceNode.parentId?.toString() === targetNode.parentId?.toString();
     },
     []
   );
