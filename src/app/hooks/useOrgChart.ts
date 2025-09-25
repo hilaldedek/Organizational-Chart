@@ -82,7 +82,7 @@ export const useOrgChart = ({
             textAlign: "center" as const,
             borderRadius: 8,
             padding: 10,
-            fontWeight: "bold",
+            fontWeight: "semibold",
           },
         };
 
@@ -99,7 +99,7 @@ export const useOrgChart = ({
             unit_id: dept.unit_id.toString(), 
             onEmployeeDrop: handleDepartmentEmployeeDrop 
           },
-          style: { width: "auto", height: "auto" },
+          style: { width: "auto", height: "auto"},
           draggable: true,
         }));
 
@@ -164,8 +164,7 @@ export const useOrgChart = ({
                 target: manager.person_id.toString(),
                 type: "smoothstep",
                 animated: true,
-                style: { stroke: "#4caf50", strokeWidth: 2 },
-                label: "yönetir",
+                style: { stroke: "#4caf50", strokeWidth: 2 , strokeDasharray: undefined},
                 labelStyle: { fontSize: 10 },
               });
             }
@@ -203,9 +202,8 @@ export const useOrgChart = ({
                 source: emp.manager_id.toString(),
                 target: emp.person_id.toString(),
                 type: "smoothstep",
-                animated: true,
-                style: { stroke: "#4caf50", strokeWidth: 2 },
-                label: "yönetir",
+                animated: false,
+                style: { stroke: "#4caf50", strokeWidth: 2, strokeDasharray: undefined  },
                 labelStyle: { fontSize: 10 },
               });
             }

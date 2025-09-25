@@ -21,7 +21,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex w-full h-screen relative">
+    <div className="flex w-full h-screen relative font-(family-name:--font-poppins)">
       <ReactFlowProvider>
         <OrgChart newDepartment={[]} showToast={showToast} />
         <Sidebar employees={employees} onAssign={handleAssignEmployee} />

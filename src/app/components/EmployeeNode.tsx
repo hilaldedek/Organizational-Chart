@@ -83,7 +83,6 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({ data }) =
       <div className="font-medium text-[#252A34]">
         {data.first_name} {data.last_name}
       </div>
-      <div className="text-[11px] text-black">ID: {data.person_id}</div>
 
       {draggedOver && (
         <div className="absolute top-[-25px] left-1/2 -translate-x-1/2 bg-[#898AC4] text-white py-[2px] px-[8px] rounded-sm text-[10px] whitespace-nowrap">

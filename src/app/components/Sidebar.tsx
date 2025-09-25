@@ -9,8 +9,10 @@ import { SidebarProps } from "../types/sidebar";
 
 const Sidebar: React.FC<SidebarProps> = () => {
   const { departments, setDepartments } = useOrgChartStore();
-  
-  const [unassignedEmployees, setUnassignedEmployees] = useState<Employee[]>([]);
+
+  const [unassignedEmployees, setUnassignedEmployees] = useState<Employee[]>(
+    []
+  );
   const [newEmployeeFirstName, setNewEmployeeFirstName] = useState("");
   const [newEmployeeLastName, setNewEmployeeLastName] = useState("");
   const [newEmployeeTitle, setNewEmployeeTitle] = useState("");
@@ -32,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
         toast.error("⚠️ Personel listesi alınamadı!");
       }
     };
-    
+
     fetchUnassignedEmployees();
   }, []);
 
@@ -57,7 +59,11 @@ const Sidebar: React.FC<SidebarProps> = () => {
       toast.error("❌ Departman adı gereklidir!");
       return false;
     }
-    if (!newDepartmentMaxCapacity.trim() || isNaN(Number(newDepartmentMaxCapacity)) || Number(newDepartmentMaxCapacity) <= 0) {
+    if (
+      !newDepartmentMaxCapacity.trim() ||
+      isNaN(Number(newDepartmentMaxCapacity)) ||
+      Number(newDepartmentMaxCapacity) <= 0
+    ) {
       toast.error("❌ Geçerli bir maksimum personel sayısı giriniz!");
       return false;
     }
@@ -82,19 +88,20 @@ const Sidebar: React.FC<SidebarProps> = () => {
         const errorData = await response.json();
         throw new Error(errorData.message || "Personel ekleme başarısız oldu.");
       }
-      
+
       const newEmployee: Employee = await response.json();
       setUnassignedEmployees((prev) => [...prev, newEmployee]);
-      
+
       // Form temizle
       setNewEmployeeFirstName("");
       setNewEmployeeLastName("");
       setNewEmployeeTitle("");
-      
+
       toast.success("✅ Yeni personel başarıyla eklendi!");
     } catch (error) {
       console.error("Personel ekleme hatası:", error);
-      const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
+      const errorMessage =
+        error instanceof Error ? error.message : "Bilinmeyen hata";
       toast.error(`❌ Personel eklenirken hata oluştu: ${errorMessage}`);
     }
   };
@@ -114,26 +121,29 @@ const Sidebar: React.FC<SidebarProps> = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Departman ekleme başarısız oldu.");
+        throw new Error(
+          errorData.message || "Departman ekleme başarısız oldu."
+        );
       }
-      
+
       const newDepartment = await response.json();
       setDepartments([...departments, newDepartment]);
-      
+
       // Form temizle
       setNewDepartmentName("");
       setNewDepartmentMaxCapacity("");
-      
+
       toast.success("🏢 Yeni birim başarıyla eklendi!");
     } catch (error) {
       console.error("Departman ekleme hatası:", error);
-      const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
+      const errorMessage =
+        error instanceof Error ? error.message : "Bilinmeyen hata";
       toast.error(`❌ Birim eklenirken hata oluştu: ${errorMessage}`);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       action();
     }
   };
@@ -148,13 +158,13 @@ const Sidebar: React.FC<SidebarProps> = () => {
         <div className="space-y-4 mb-8">
           {unassignedEmployees.length > 0 ? (
             unassignedEmployees.map((employee) => (
-              <EmployeeCard 
-                key={employee.person_id} 
+              <EmployeeCard
+                key={employee.person_id}
                 employee={employee}
                 onEmployeeAssigned={(employeeId: string) => {
                   // Personel atandığında listeden kaldır
-                  setUnassignedEmployees(prev => 
-                    prev.filter(emp => emp.person_id !== employeeId)
+                  setUnassignedEmployees((prev) =>
+                    prev.filter((emp) => emp.person_id !== employeeId)
                   );
                 }}
               />
@@ -203,8 +213,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
           <div className="flex justify-center">
             <button
               onClick={handleAddEmployee}
-              disabled={!newEmployeeFirstName.trim() || !newEmployeeLastName.trim() || !newEmployeeTitle.trim()}
-              className="bg-[#ED775A] text-white px-4 py-2 rounded-4xl font-normal hover:bg-[#FF714B]/90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={
+                !newEmployeeFirstName.trim() ||
+                !newEmployeeLastName.trim() ||
+                !newEmployeeTitle.trim()
+              }
+              className="bg-[#ED775A] text-white px-4 py-2 rounded-4xl font-normal hover:bg-[#FF714B]/90 transition-colors disabled:cursor-not-allowed"
             >
               Personel Ekle
             </button>
@@ -234,14 +248,16 @@ const Sidebar: React.FC<SidebarProps> = () => {
             onChange={(e) => setNewDepartmentMaxCapacity(e.target.value)}
             onKeyPress={(e) => handleKeyPress(e, handleAddDepartment)}
             min="1"
-            max="100"
+            max="10"
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"
           />
           <div className="flex justify-center">
             <button
               onClick={handleAddDepartment}
-              disabled={!newDepartmentName.trim() || !newDepartmentMaxCapacity.trim()}
-              className="bg-[#ED775A] text-white px-4 py-2 rounded-4xl font-normal hover:bg-[#FF714B]/90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={
+                !newDepartmentName.trim() || !newDepartmentMaxCapacity.trim()
+              }
+              className="bg-[#ED775A] text-white px-4 py-2 rounded-4xl font-normal hover:bg-[#FF714B]/90 disabled:cursor-not-allowed"
             >
               Birim Ekle
             </button>

@@ -35,6 +35,10 @@ interface OrgChartState {
   updateEmployeeInNodes: (sourceNodeId: string, targetNodeId: string) => void;
   updateEdgesForEmployee: (sourceNodeId: string, targetNodeId: string) => void;
   
+  // ELK Layout actions
+  applyAutoLayout: () => Promise<void>;
+  applyHierarchicalLayout: () => Promise<void>;
+  
   // Reset
   resetStore: () => void;
 }
@@ -122,12 +126,241 @@ export const useOrgChartStore = create<OrgChartState>()(
           target: sourceNodeId,
           type: "smoothstep" as const,
           animated: true,
-          style: { stroke: "#4caf50", strokeWidth: 2 },
-          label: "yönetir",
+          style: { stroke: "#4caf50", strokeWidth: 2,strokeDasharray: undefined },
           labelStyle: { fontSize: 10 },
         };
         return { edges: [...filteredEdges, newEdge] };
       }),
+      
+      applyAutoLayout: async () => {
+        const { nodes, edges } = get();
+        if (nodes.length === 0) return;
+        
+        try {
+          // Dynamic import to avoid SSR issues
+          const ELK = (await import('elkjs/lib/elk.bundled.js')).default;
+          const elk = new ELK();
+
+          // Sadece employee node'ları için ELK layout uygula
+          const employeeNodes = nodes.filter(node => node.type === 'employee');
+          const nodeWidth = 180;
+          const nodeHeight = 120;
+
+          // Aynı manager'a bağlı node'ları gruplandır
+          const managerGroups = new Map<string, string[]>();
+          employeeNodes.forEach(node => {
+            const managerId = node.data?.manager_id?.toString();
+            if (managerId) {
+              if (!managerGroups.has(managerId)) {
+                managerGroups.set(managerId, []);
+              }
+              managerGroups.get(managerId)!.push(node.id);
+            }
+          });
+
+          const elkNodes = employeeNodes.map(node => {
+            const managerId = node.data?.manager_id?.toString();
+            const siblings = managerId ? managerGroups.get(managerId) || [] : [];
+            const isGrouped = siblings.length > 1;
+
+            const layoutOptions: Record<string, string> = {
+              'elk.priority': '1',
+              'elk.nodeSize.constraints': 'NODE_LABELS',
+              'elk.spacing.nodeNode': isGrouped ? '400' : '50',
+              'elk.spacing.edgeNode': '60',
+              'elk.layered.spacing.nodeNodeBetweenLayers': '200'
+            };
+
+            if (isGrouped && managerId) {
+              layoutOptions['elk.partitioning.partition'] = managerId;
+              layoutOptions['elk.spacing.nodeNode'] = '120';
+              layoutOptions['elk.spacing.edgeNode'] = '80';
+            }
+
+            return {
+              id: node.id,
+              width: nodeWidth,
+              height: nodeHeight,
+              layoutOptions
+            };
+          });
+
+          // Sadece employee'lar arası edge'leri al
+          const employeeIds = new Set(employeeNodes.map(n => n.id));
+          const elkEdges = edges
+            .filter(edge => employeeIds.has(edge.source) && employeeIds.has(edge.target))
+            .map(edge => ({
+              id: edge.id,
+              sources: [edge.source],
+              targets: [edge.target]
+            }));
+
+          const elkGraph = {
+            id: 'root',
+            children: elkNodes,
+            edges: elkEdges,
+            layoutOptions: {
+              'elk.algorithm': 'layered',
+              'elk.direction': 'DOWN',
+              'elk.spacing.nodeNode': '150',
+              'elk.spacing.edgeNode': '100',
+              'elk.layered.spacing.nodeNodeBetweenLayers': '200',
+              'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+              'elk.layered.nodePlacement.strategy': 'SIMPLE',
+              'elk.layered.cycleBreaking.strategy': 'GREEDY',
+              'elk.layered.layering.strategy': 'INTERACTIVE',
+              'elk.layered.edgeRouting': 'ORTHOGONAL',
+              'elk.spacing.edgeEdge': '50',
+              'elk.layered.spacing.edgeNodeBetweenLayers': '120',
+              'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
+              'elk.layered.nodePlacement.bk.edgeStraightening': 'IMPROVE_STRAIGHTNESS'
+            }
+          };
+
+          const layoutedGraph = await elk.layout(elkGraph);
+
+          if (!layoutedGraph.children) {
+            console.warn('ELK layout sonucu beklenmedik formatta');
+            return;
+          }
+
+          // ELK sonuçlarını React Flow node'larına dönüştür - sadece employee'ları güncelle
+          const layoutedNodes = nodes.map(node => {
+            if (node.type === 'employee') {
+              const elkNode = layoutedGraph.children?.find(n => n.id === node.id);
+              if (elkNode && elkNode.x !== undefined && elkNode.y !== undefined) {
+                return {
+                  ...node,
+                  position: {
+                    x: elkNode.x,
+                    y: elkNode.y
+                  }
+                };
+              }
+            }
+            return node;
+          });
+
+          set({ nodes: layoutedNodes });
+        } catch (error) {
+          console.error('Auto layout hatası:', error);
+        }
+      },
+      
+      applyHierarchicalLayout: async () => {
+        const { nodes, edges } = get();
+        if (nodes.length === 0) return;
+        
+        try {
+          // Dynamic import to avoid SSR issues
+          const ELK = (await import('elkjs/lib/elk.bundled.js')).default;
+          const elk = new ELK();
+
+          // Sadece employee node'ları için ELK layout uygula
+          const employeeNodes = nodes.filter(node => node.type === 'employee');
+          const nodeWidth = 180;
+          const nodeHeight = 120;
+
+          // Aynı manager'a bağlı node'ları gruplandır
+          const managerGroups = new Map<string, string[]>();
+          employeeNodes.forEach(node => {
+            const managerId = node.data?.manager_id?.toString();
+            if (managerId) {
+              if (!managerGroups.has(managerId)) {
+                managerGroups.set(managerId, []);
+              }
+              managerGroups.get(managerId)!.push(node.id);
+            }
+          });
+
+          const elkNodes = employeeNodes.map(node => {
+            const managerId = node.data?.manager_id?.toString();
+            const siblings = managerId ? managerGroups.get(managerId) || [] : [];
+            const isGrouped = siblings.length > 1;
+
+            const layoutOptions: Record<string, string> = {
+              'elk.priority': '1',
+              'elk.nodeSize.constraints': 'NODE_LABELS',
+              'elk.spacing.nodeNode': isGrouped ? '100' : '50',
+              'elk.spacing.edgeNode': '60',
+              'elk.layered.spacing.nodeNodeBetweenLayers': '80'
+            };
+
+            if (isGrouped && managerId) {
+              layoutOptions['elk.partitioning.partition'] = managerId;
+              layoutOptions['elk.spacing.nodeNode'] = '120';
+              layoutOptions['elk.spacing.edgeNode'] = '80';
+            }
+
+            return {
+              id: node.id,
+              width: nodeWidth,
+              height: nodeHeight,
+              layoutOptions
+            };
+          });
+
+          // Sadece employee'lar arası edge'leri al
+          const employeeIds = new Set(employeeNodes.map(n => n.id));
+          const elkEdges = edges
+            .filter(edge => employeeIds.has(edge.source) && employeeIds.has(edge.target))
+            .map(edge => ({
+              id: edge.id,
+              sources: [edge.source],
+              targets: [edge.target]
+            }));
+
+          const elkGraph = {
+            id: 'root',
+            children: elkNodes,
+            edges: elkEdges,
+            layoutOptions: {
+              'elk.algorithm': 'layered',
+              'elk.direction': 'DOWN',
+              'elk.spacing.nodeNode': '150',
+              'elk.spacing.edgeNode': '100',
+              'elk.layered.spacing.nodeNodeBetweenLayers': '200',
+              'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+              'elk.layered.nodePlacement.strategy': 'SIMPLE',
+              'elk.layered.cycleBreaking.strategy': 'GREEDY',
+              'elk.layered.layering.strategy': 'INTERACTIVE',
+              'elk.layered.edgeRouting': 'ORTHOGONAL',
+              'elk.spacing.edgeEdge': '50',
+              'elk.layered.spacing.edgeNodeBetweenLayers': '120',
+              'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
+              'elk.layered.nodePlacement.bk.edgeStraightening': 'IMPROVE_STRAIGHTNESS'
+            }
+          };
+
+          const layoutedGraph = await elk.layout(elkGraph);
+
+          if (!layoutedGraph.children) {
+            console.warn('ELK hierarchical layout sonucu beklenmedik formatta');
+            return;
+          }
+
+          // ELK sonuçlarını React Flow node'larına dönüştür - sadece employee'ları güncelle
+          const layoutedNodes = nodes.map(node => {
+            if (node.type === 'employee') {
+              const elkNode = layoutedGraph.children?.find(n => n.id === node.id);
+              if (elkNode && elkNode.x !== undefined && elkNode.y !== undefined) {
+                return {
+                  ...node,
+                  position: {
+                    x: elkNode.x,
+                    y: elkNode.y
+                  }
+                };
+              }
+            }
+            return node;
+          });
+
+          set({ nodes: layoutedNodes });
+        } catch (error) {
+          console.error('Hierarchical layout hatası:', error);
+        }
+      },
       
       resetStore: () => set(initialState),
     }),

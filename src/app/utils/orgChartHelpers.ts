@@ -6,7 +6,7 @@ export const getContainerStyle = (draggedOver: boolean): CSSProperties => ({
   width: "100%",
   height: "100%",
   minWidth: "300px",
-  minHeight: "200px",
+  minHeight: "400px",
   border: draggedOver ? "3px dashed #4caf50" : "2px solid #ddd",
   borderRadius: "12px",
   background: draggedOver ? "rgba(76, 175, 80, 0.1)" : "#f9f9f9",
@@ -30,7 +30,7 @@ export const headerStyle: CSSProperties = {
 };
 
 export const getNodeStyle = (draggedOver: boolean, data: EmployeeNodeData): CSSProperties => ({
-  background: data.isManager ? "#e3f2fd" : "#f5f5f5",
+  background: data.isManager ? "#FFEAEA" : "#f5f5f5",
   border: draggedOver ? "2px solid #4caf50" : "1px solid #ddd",
   borderRadius: "8px",
   padding: "10px",

@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useEffect } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -19,8 +19,14 @@ interface OrgChartInnerProps {
 }
 
 const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
-  const { nodes, edges, onNodesChange, onEdgesChange, setNodes } =
-    useOrgChartStore();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    setNodes,
+    applyHierarchicalLayout,
+  } = useOrgChartStore();
 
   // Utility functions
   const findAllSubordinatesFromNodes = useCallback(
@@ -52,7 +58,9 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
 
   const areInSameDepartmentNodes = useCallback(
     (sourceNode: Node, targetNode: Node): boolean => {
-      return sourceNode.parentId?.toString() === targetNode.parentId?.toString();
+      return (
+        sourceNode.parentId?.toString() === targetNode.parentId?.toString()
+      );
     },
     []
   );
@@ -137,6 +145,18 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
     showToast,
   });
 
+  // Otomatik düzen uygula - nodes yüklendiğinde
+  useEffect(() => {
+    if (nodes.length > 0 && edges.length > 0) {
+      // Kısa bir gecikme ile düzen uygula (DOM güncellemeleri için)
+      const timer = setTimeout(() => {
+        applyHierarchicalLayout();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [nodes.length, edges.length, applyHierarchicalLayout]);
+
   // Node types
   const nodeTypes = useMemo(
     () => ({
@@ -173,7 +193,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
         onDrop={onDrop}
         fitView
         nodeTypes={nodeTypes}
-        connectionLineStyle={{ stroke: "#555", strokeWidth: 2 }}
+        connectionLineStyle={{ stroke: "#555", strokeWidth: 2,strokeDasharray: undefined }}
         connectionLineType={ConnectionLineType.SmoothStep}
       >
         <Background color="#44444E" gap={20} variant={BackgroundVariant.Dots} />

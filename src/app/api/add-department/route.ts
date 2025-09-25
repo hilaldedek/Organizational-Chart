@@ -11,6 +11,15 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Eğer max_employees 10'dan büyükse hata döndür
+    if (Number(max_employees) > 10) {
+      return NextResponse.json(
+        { message: "Maksimum çalışan sayısı 10'dan fazla olamaz." },
+        { status: 400 }
+      );
+    }
+
     const maxEmployeesValue = Number(max_employees) + 1;
 
     const result = await pool.query(

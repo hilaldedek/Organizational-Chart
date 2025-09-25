@@ -155,64 +155,7 @@ export const DepartmentNodeComponent: React.FC<{
   }, []);
 
   // Drag feedback message
-  const getDragFeedbackMessage = () => {
-    if (!draggedOver) return null;
-    
-    if (!departmentHasEmployees) {
-      return (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            fontSize: "14px",
-            color: "#4caf50",
-            textAlign: "center",
-            pointerEvents: "none",
-            zIndex: 1,
-            background: "rgba(255,255,255,0.9)",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "2px solid #4caf50",
-          }}
-        >
-          ✅ İlk personeli buraya bırakın (Yönetici)
-          {draggedEmployee && (
-            <div className="mt-2 text-sm">
-              <strong>{draggedEmployee.first_name} {draggedEmployee.last_name}</strong>
-              <br />
-              <span className="text-xs">Departman Yöneticisi olarak atanacak</span>
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    return (
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          fontSize: "14px",
-          color: "#ff6b6b",
-          textAlign: "center",
-          pointerEvents: "none",
-          zIndex: 1,
-          background: "rgba(255,255,255,0.9)",
-          padding: "10px",
-          borderRadius: "8px",
-          border: "2px solid #ff6b6b",
-        }}
-      >
-        ❌ Departmanda zaten yönetici var!
-        <br />
-        Yeni personelleri mevcut personellerin üstüne bırakın.
-      </div>
-    );
-  };
+
 
   return (
     <div
@@ -221,6 +164,7 @@ export const DepartmentNodeComponent: React.FC<{
       onDragLeave={handleDragLeave}
       onDrop={handleEmployeeToDepartmentDrop}
     >
+      {/* <h1>hello</h1>
       <NodeResizer
         color="#007acc"
         isVisible={selected}
@@ -232,12 +176,13 @@ export const DepartmentNodeComponent: React.FC<{
           height: 8,
           borderRadius: "50%",
         }}
-      />
+      /> */}
 
-      <div style={headerStyle} className="text-center">
-        {data.unit_name}
+      <div style={headerStyle} >
+        <div className="text-center text-xl font-semibold">{data.unit_name}</div>
+        
         {departmentHasEmployees && (
-          <div className="mt-2 font-normal text-xs flex items-center justify-center">
+          <div className="mt-2 font-normal text-sm flex items-center justify-center">
             <span className="text-[#252A34]">Yönetici:</span>
             <span className="text-[#4caf50] mr-1 ml-0.5">
               {departmentManager ? 
@@ -249,14 +194,13 @@ export const DepartmentNodeComponent: React.FC<{
           </div>
         )}
         {departmentEmployees.length > 0 && (
-          <div className="mt-1 text-xs text-gray-600">
+          <div className="mt-1 text-xs font-normal text-gray-600">
             Personel Sayısı: {departmentEmployees.length}
           </div>
         )}
       </div>
 
-      {/* Drag feedback message */}
-      {getDragFeedbackMessage()}
+    
 
       {/* Instructions */}
       <div
