@@ -12,7 +12,8 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
     addUpdatingEmployee, 
     removeUpdatingEmployee, 
     updatingEmployees,
-    nodes 
+    nodes ,
+    setAllEmployees,
   } = useOrgChartStore();
 
   // Departman içi manager güncelleme (sadece manager_id değişir)

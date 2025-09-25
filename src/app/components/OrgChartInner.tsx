@@ -96,12 +96,10 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
           drop_department_id: departmentId,
           drop_employee_id: employee.person_id.toString(),
         });
+        if (!result.success) return;
 
-        if (!result.success) {
-          return;
-        }
-
-        const deptGroupNode = nodes.find((n) => n.id === departmentId);
+        const { nodes: currentNodes } = useOrgChartStore.getState();
+        const deptGroupNode = currentNodes.find((n) => n.id === departmentId);
         if (!deptGroupNode) return;
 
         const newNode: Node = {
@@ -125,7 +123,6 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
           extent: "parent",
           expandParent: true,
         };
-
         setNodes((prev) => [...prev, newNode]);
       })();
     },
