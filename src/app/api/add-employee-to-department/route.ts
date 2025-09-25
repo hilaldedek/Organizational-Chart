@@ -1,4 +1,4 @@
-// src/app/api/department/add-employee/route.ts
+// src/app/api/add-employee/route.ts
 import { NextResponse } from "next/server";
 import { Department } from "@/app/types/orgChart";
 import pool from "../../../../lib/db";
@@ -36,23 +36,26 @@ export async function PUT(req: Request) {
       );
     }
 
-    let managerId: number;
-
     if (!department.manager_id) {
       // Departmana ilk kişi atanıyor → manager = CEO
       const ceoResult = await client.query("SELECT person_id FROM employee WHERE role = 'CEO'");
       const ceoId = ceoResult.rows[0]?.person_id;
 
-      managerId = ceoId;
-
+      await client.query(
+        'UPDATE employee SET department_id = $1, manager_id = $2 WHERE person_id = $3',
+        [drop_department_id, ceoId, person_id]
+      );
       // Departmanın manager_id'sini ilk atanan personel yap
       await client.query(
         "UPDATE department SET manager_id = $1 WHERE unit_id = $2",
         [person_id, drop_department_id]
       );
-    } 
-
-    // Employee güncelle
+      await client.query(
+        "UPDATE department SET employee_count = employee_count + 1 WHERE unit_id = $1",
+        [drop_department_id]
+      );
+    }else{
+// Employee güncelle
     await client.query(
       "UPDATE employee SET department_id = $1, manager_id = $2 WHERE person_id = $3",
       [drop_department_id, drop_employee_id, person_id]
@@ -63,6 +66,9 @@ export async function PUT(req: Request) {
       "UPDATE department SET employee_count = employee_count + 1 WHERE unit_id = $1",
       [drop_department_id]
     );
+    }
+
+    
 
     await client.query("COMMIT");
     return NextResponse.json({ message: "Personel departmana başarıyla eklendi." });

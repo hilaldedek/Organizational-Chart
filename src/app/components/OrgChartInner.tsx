@@ -12,13 +12,15 @@ import { useDragAndDrops } from "../hooks/useDragAndDrop";
 import { useOrgChartStore } from "../stores/orgChartStore";
 import EmployeeNode from "./EmployeeNode";
 import { DepartmentNodeComponent } from "./DepartmentNode";
+import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 
 interface OrgChartInnerProps {
   showToast: (type: "success" | "error" | "warning", message: string) => void;
 }
 
 const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
-  const { nodes, edges, onNodesChange, onEdgesChange } = useOrgChartStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, setNodes } =
+    useOrgChartStore();
 
   // Utility functions
   const findAllSubordinatesFromNodes = useCallback(
@@ -61,6 +63,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
     findAllSubordinatesFromNodes,
     areInSameDepartmentNodes,
   });
+  const { handleAddEmployeeToDepartment } = useEmployeeUpdate({ showToast });
 
   const handleDepartmentEmployeeDrop = useCallback(
     (
@@ -87,15 +90,46 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
         return;
       }
 
-      // İlk personeli departman yöneticisi olarak ekle
-      // Bu işlem API çağrısı ile yapılmalı
-      // Şimdilik sadece log bırakıyoruz
-      console.log(
-        "İlk personel departman yöneticisi olarak atanacak:",
-        employee
-      );
+      (async () => {
+        const result = await handleAddEmployeeToDepartment({
+          person_id: employee.person_id.toString(),
+          drop_department_id: departmentId,
+          drop_employee_id: employee.person_id.toString(),
+        });
+
+        if (!result.success) {
+          return;
+        }
+
+        const deptGroupNode = nodes.find((n) => n.id === departmentId);
+        if (!deptGroupNode) return;
+
+        const newNode: Node = {
+          id: employee.person_id.toString(),
+          type: "employee",
+          position: {
+            x: deptGroupNode.position.x + 50,
+            y: deptGroupNode.position.y + 80,
+          },
+          data: {
+            ...employee,
+            person_id: employee.person_id,
+            isManager: true,
+            onDragStart: handleEmployeeDragStart,
+            onDrop: handleEmployeeDrop,
+            isDragTarget: false,
+            isBeingDragged: false,
+          },
+          draggable: true,
+          parentId: departmentId,
+          extent: "parent",
+          expandParent: true,
+        };
+
+        setNodes((prev) => [...prev, newNode]);
+      })();
     },
-    [nodes, showToast]
+    [nodes, showToast, handleAddEmployeeToDepartment]
   );
 
   // useOrgChart hook'u - sadece gerekli handler'ları geçiyoruz
@@ -132,7 +166,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
   }, []);
 
   return (
-    <div style={{ width: "200vw", height: "200vh",position: "relative" }}>
+    <div style={{ width: "200vw", height: "200vh", position: "relative" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

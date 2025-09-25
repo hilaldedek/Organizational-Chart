@@ -1,4 +1,4 @@
-// src/app/api/department/update-employee-and-manager/route.ts
+// src/app/api/update-employee-and-manager/route.ts
 import { NextResponse } from "next/server";
 import pool from "../../../../lib/db";
 

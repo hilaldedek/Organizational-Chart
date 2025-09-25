@@ -26,7 +26,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
       try {
         addUpdatingEmployee(person_id);
         
-        const response = await fetch("/api/department/update-manager", {
+        const response = await fetch("/api/update-employee-and-manager", {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",
@@ -63,6 +63,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
   // Yeni personel departmana ekleme (hem department_id hem manager_id değişir)
   const handleAddEmployeeToDepartment = useCallback(
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
+      console.log("handleAddEmployeeToDepartment tetiklendi!", { person_id, drop_department_id, drop_employee_id });
       if (updatingEmployees.has(person_id)) {
         showToast("warning", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
         return { success: false };
@@ -71,7 +72,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
       try {
         addUpdatingEmployee(person_id);
         
-        const response = await fetch("/api/department/add-employee", {
+        const response = await fetch("/api/add-employee-to-department", {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",

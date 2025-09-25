@@ -24,9 +24,10 @@ export const useDragAndDrops = ({
     updateEdgesForEmployee,
     addProcessedRequest,
     removeProcessedRequest,
+    setNodes,
   } = useOrgChartStore();
-
-  const { handleEmployeeUpdate } = useEmployeeUpdate({ showToast });
+  
+  const { handleEmployeeUpdate, handleAddEmployeeToDepartment } = useEmployeeUpdate({ showToast });
 
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
@@ -85,17 +86,17 @@ export const useDragAndDrops = ({
   const handleEmployeeDrop = useCallback(
     (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => {
       console.log("handleEmployeeDrop tetiklendi!", { targetNodeId, draggedNodeId });
-      
-      if (!nodes.length) {
+      const {nodes:currentNodes} = useOrgChartStore.getState();
+      if (!currentNodes.length) {
         console.warn("Nodes dizisi boş!");
         return;
       }
 
-      const existingNode = nodes.find((node) => node.id === draggedEmployee.person_id.toString());
+      const existingNode = currentNodes.find((node) => node.id === draggedEmployee.person_id.toString());
 
       if (existingNode) {
-        const sourceNode = nodes.find((node) => node.id === draggedNodeId);
-        const targetNode = nodes.find((node) => node.id === targetNodeId);
+        const sourceNode = currentNodes.find((node) => node.id === draggedNodeId);
+        const targetNode = currentNodes.find((node) => node.id === targetNodeId);
 
         if (!sourceNode || !targetNode) {
           console.error("Source veya target node bulunamadı!", { sourceNode, targetNode });
@@ -103,7 +104,7 @@ export const useDragAndDrops = ({
         }
 
         // Dairesel hiyerarşi kontrolü
-        const allSubordinates = findAllSubordinatesFromNodes(draggedNodeId, nodes);
+        const allSubordinates = findAllSubordinatesFromNodes(draggedNodeId, currentNodes);
         if (allSubordinates.some((sub) => sub.id === targetNodeId)) {
           showToast("warning", "Dairesel hiyerarşi oluşturulamaz!");
           return;
@@ -123,7 +124,57 @@ export const useDragAndDrops = ({
         }
         return;
       }
-
+      if (!existingNode) {
+        const { nodes: currentNodes } = useOrgChartStore.getState();
+        const targetNode = currentNodes.find((n) => n.id === targetNodeId);
+        const departmentId = targetNode?.parentId?.toString();
+        if (!departmentId) {
+          showToast("error", "Hedef departman bulunamadı.");
+          return;
+        }
+      
+        (async () => {
+          // 1) API: yeni personeli hedef departmana ve targetNode'u manager olacak şekilde ekle
+          const result = await handleAddEmployeeToDepartment({
+            person_id: draggedEmployee.person_id.toString(),
+            drop_department_id: departmentId,
+            drop_employee_id: targetNodeId,
+          });
+          if (!result.success) return;
+      
+          // 2) UI: yeni node’u aynı departmanda oluştur
+          const newNode: Node = {
+            id: draggedEmployee.person_id.toString(),
+            type: "employee",
+            position: {
+              x: targetNode?.position.x ?? 50,
+              y: (targetNode?.position.y ?? 80) + 100, // hedefin altına yerleştir
+            },
+            data: {
+              ...draggedEmployee,
+              person_id: draggedEmployee.person_id,
+              isManager: false,
+              onDragStart: handleEmployeeDragStart,
+              onDrop: handleEmployeeDrop,
+              isDragTarget: false,
+              isBeingDragged: false,
+            },
+            draggable: true,
+            parentId: departmentId,
+            extent: "parent",
+            expandParent: true,
+          };
+      
+          setNodes((prev) => [...prev, newNode]);
+      
+          // 3) Edge: targetNode yönetici olacak şekilde bağla
+          updateEdgesForEmployee(newNode.id, targetNodeId);
+      
+          showToast("success", "Personel eklendi ve bağlandı.");
+        })();
+      
+        return;
+      }
       // Sidebar’dan yeni personel ekleme devre dışı
       showToast("warning", "Yeni personel ekleme şu anda desteklenmiyor.");
     },
