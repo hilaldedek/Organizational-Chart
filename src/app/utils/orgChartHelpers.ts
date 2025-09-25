@@ -1,63 +1,50 @@
-import { DEPARTMENT_MIN_HEIGHT, DEPARTMENT_MIN_WIDTH } from "./constants";
+// src/app/utils/orgChartHelpers.ts
+import { CSSProperties } from "react";
+import { EmployeeNodeData } from "../types/orgChart";
 
-
-export const getNodeStyle = (
-  draggedOver: boolean,
-  data: { isBeingDragged: boolean }
-) => ({
-  border: `2px solid ${
-    draggedOver ? "#898AC4" : data.isBeingDragged ? "#ff6b6b" : "#333"
-  }`,
-  borderRadius: 8,
-  padding: 12,
-  background: draggedOver
-    ? "#f0f8ff"
-    : data.isBeingDragged
-    ? "#ffe6e6"
-    : "#ffffff",
-  minWidth: 160,
-  cursor: "move",
-  position: "relative" as const,
-  transition: "all 0.3s ease",
-  boxShadow: draggedOver
-    ? "0 2px 4px #898AC4"
-    : data.isBeingDragged
-    ? "0 2px 4px rgba(255,107,107,0.3)"
-    : "0 2px 4px rgba(0,0,0,0.1)",
-});
-
-export const handleStyle = {
-  background: "#4caf50",
-  width: 10,
-  height: 10,
-  border: "2px solid #fff",
-};
-
-export const getContainerStyle = (draggedOver: boolean) => ({
+export const getContainerStyle = (draggedOver: boolean): CSSProperties => ({
   width: "100%",
   height: "100%",
-  border: `2px dashed ${draggedOver ? "#F49BAB" : "#ccc"}`,
-  borderRadius: 12,
-  background: draggedOver ? "#f49bab1c" : "rgba(248,249,250,0.3)",
-  padding: 15,
-  position: "relative" as const,
+  minWidth: "300px",
+  minHeight: "200px",
+  border: draggedOver ? "3px dashed #4caf50" : "2px solid #ddd",
+  borderRadius: "12px",
+  background: draggedOver ? "rgba(76, 175, 80, 0.1)" : "#f9f9f9",
+  position: "relative",
   transition: "all 0.3s ease",
-  minHeight: DEPARTMENT_MIN_HEIGHT,
-  minWidth: DEPARTMENT_MIN_WIDTH,
+  boxShadow: draggedOver ? "0 0 15px rgba(76, 175, 80, 0.3)" : "0 2px 4px rgba(0,0,0,0.1)",
 });
 
-export const headerStyle = {
-  position: "absolute" as const,
-  top: 8,
-  left: 8,
-  right: 8,
-  fontSize: "20px",
+export const headerStyle: CSSProperties = {
+  position: "absolute",
+  top: "10px",
+  left: "10px",
+  right: "10px",
+  fontSize: "16px",
   fontWeight: "bold",
   color: "#252A34",
-  textAlign: "center" as const,
-  background: "#f49bab56",
-  padding: "8px 15px",
-  borderRadius: 8,
+  background: "rgba(255, 255, 255, 0.9)",
+  padding: "8px 12px",
+  borderRadius: "8px",
   border: "1px solid #ddd",
-  zIndex: 1,
+};
+
+export const getNodeStyle = (draggedOver: boolean, data: EmployeeNodeData): CSSProperties => ({
+  background: data.isManager ? "#e3f2fd" : "#f5f5f5",
+  border: draggedOver ? "2px solid #4caf50" : "1px solid #ddd",
+  borderRadius: "8px",
+  padding: "10px",
+  minWidth: "120px",
+  textAlign: "center" as const,
+  fontSize: "12px",
+  position: "relative",
+  boxShadow: draggedOver ? "0 0 10px rgba(76, 175, 80, 0.3)" : "0 1px 3px rgba(0,0,0,0.1)",
+  transition: "all 0.2s ease",
+});
+
+export const handleStyle: CSSProperties = {
+  background: "#555",
+  width: "8px",
+  height: "8px",
+  border: "2px solid #fff",
 };

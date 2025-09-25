@@ -23,36 +23,32 @@ export interface Department {
 }
 
 export interface EmployeeNodeData extends Employee {
-  onDragStart: (employee: Employee, sourceNodeId: string) => void;
-  onDrop: (
-    targetNodeId: string,
-    draggedEmployee: Employee,
-    draggedNodeId: string
-  ) => void;
-  isDragTarget: boolean;
-  isBeingDragged: boolean;
+  isManager?: boolean;
+  onDragStart?: (sourceNodeId: string) => void;
+  onDrop?: (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
+  isDragTarget?: boolean;
+  isBeingDragged?: boolean;
 }
 
 export interface DepartmentNodeData {
   unit_name: string;
-  unit_id: string;
-  departmentNodes?: Node[];
-  onEmployeeDrop: (
-    departmentId: string,
-    employee: Employee,
-    position: { x: number; y: number }
-  ) => void;
+  unit_id: number;
+  onEmployeeDrop: (departmentId: string, employee: Employee, position: { x: number; y: number }) => void;
+  departmentNodes?: any[]; // Legacy - now we use nodes from store
 }
 
 export interface DragData {
-  type: "employee-node";
-  employee: EmployeeNodeData;
+  type: "employee" | "employee-node";
+  employee: Employee;
   sourceNodeId: string;
   person_id: string;
 }
 
-export interface UseOrgChartProps {
-  newDepartment?: Department[];
+export interface UseOrgChartParams {
+  handleEmployeeDragStart: (sourceNodeId: string) => void;
+  handleEmployeeDrop: (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
+  handleDepartmentEmployeeDrop: (departmentId: string, employee: Employee, position: { x: number; y: number }) => void;
+  showToast: (type: "success" | "error" | "warning", message: string) => void;
 }
 
 export interface UseOrgChartReturn {
@@ -111,20 +107,19 @@ export interface OrgChartInnerProps {
   showToast: (type: "success" | "error" | "warning", message: string) => void;
 }
 
-export interface EmployeeUpdateHooksParams {
+export interface UseEmployeeUpdateParams {
   showToast: (type: "success" | "error" | "warning", message: string) => void;
-  setNodes: React.Dispatch<React.SetStateAction<any[]>>;
-  setEdges: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export interface UseOrgChartParams {
-  newDepartment: Department[];
-  handleEmployeeDragStart: (id: string) => void;
-  handleEmployeeDrop: (targetId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
-  handleDepartmentEmployeeDrop: (
-    unitId: string,
-    employee: Employee,
-    position: { x: number; y: number }
-  ) => void;
-  showToast: (type: "error" | "warning" | "success", message: string) => void;
+  handleEmployeeDragStart: (sourceNodeId: string) => void;
+  handleEmployeeDrop: (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
+  handleDepartmentEmployeeDrop: (departmentId: string, employee: Employee, position: { x: number; y: number }) => void;
+  showToast: (type: "success" | "error" | "warning", message: string) => void;
+}
+
+export interface UseDragAndDropsParams {
+  showToast: (type: "success" | "error" | "warning", message: string) => void;
+  findAllSubordinatesFromNodes: (nodeId: string, nodes: Node[]) => Node[];
+  areInSameDepartmentNodes: (sourceNode: Node, targetNode: Node) => boolean;
 }

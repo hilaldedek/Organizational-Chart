@@ -13,7 +13,7 @@ const OrgChart: React.FC<OrgChartInnerProps> = ({ newDepartment }) => {
 
   return (
     <ReactFlowProvider>
-      <OrgChartInner newDepartment={newDepartment} showToast={showToast} />
+      <OrgChartInner showToast={showToast} />
       <ToastContainer position="top-right" autoClose={3000} />
     </ReactFlowProvider>
   );

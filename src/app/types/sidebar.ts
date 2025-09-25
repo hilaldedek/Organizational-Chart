@@ -1,6 +1,6 @@
-import { Department } from "./orgChart";
+import { Department, Employee } from "./orgChart";
 
-export interface SidebarProps {
-  departments: Department[];
-  setDepartments: React.Dispatch<React.SetStateAction<Department[]>>;
+export interface EmployeeCardProps {
+  employee: Employee;
+  onEmployeeAssigned?: (employeeId: string) => void;
 }

@@ -5,7 +5,6 @@ import { Handle, Position } from "@xyflow/react";
 import { DragData, EmployeeNodeData } from "../types/orgChart";
 import { getNodeStyle, handleStyle } from "../utils/orgChartHelpers";
 
-
 const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({ data }) => {
   const [draggedOver, setDraggedOver] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -19,7 +18,7 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({ data }) =
         person_id: data.person_id,
       };
       e.dataTransfer.setData("application/json", JSON.stringify(dragData));
-      data.onDragStart(data, data.person_id);
+      data.onDragStart?.(data.person_id); // ✅ optional chaining
       console.log("Dragging employee:", data.first_name, data.last_name);
     },
     [data]
@@ -52,7 +51,7 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({ data }) =
         const dropData = JSON.parse(e.dataTransfer.getData("application/json"));
         if (dropData && (dropData.person_id || dropData.sourceNodeId)) {
           const sourceId = dropData.person_id || dropData.sourceNodeId;
-          data.onDrop(data.person_id, dropData.employee || dropData, sourceId);
+          data.onDrop?.(data.person_id, dropData.employee || dropData, sourceId); // ✅ optional chaining
         }
       } catch (error) {
         console.error("Drop verisi parse edilemedi:", error);
