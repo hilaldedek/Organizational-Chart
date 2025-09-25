@@ -5,9 +5,9 @@ import { Employee } from "../types/orgChart";
 import { toast } from "react-toastify";
 import EmployeeCard from "./EmployeeCard";
 import { useOrgChartStore } from "../stores/orgChartStore";
-import { EmployeeCardProps } from "../types/sidebar";
+import { SidebarProps } from "../types/sidebar";
 
-const Sidebar: React.FC<EmployeeCardProps> = () => {
+const Sidebar: React.FC<SidebarProps> = () => {
   const { departments, setDepartments } = useOrgChartStore();
   
   const [unassignedEmployees, setUnassignedEmployees] = useState<Employee[]>([]);

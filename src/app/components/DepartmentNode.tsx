@@ -44,7 +44,6 @@ export const DepartmentNodeComponent: React.FC<{
   }, [departmentEmployees]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    console.log("DepartmentGroupNodeComponent - handleDragOver tetiklendi!");
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     
@@ -70,7 +69,6 @@ export const DepartmentNodeComponent: React.FC<{
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    console.log("DepartmentGroupNodeComponent - handleDragLeave tetiklendi!");
 
     // Check if we're actually leaving the department area
     const rect = e.currentTarget.getBoundingClientRect();
@@ -92,9 +90,6 @@ export const DepartmentNodeComponent: React.FC<{
 
   const handleEmployeeToDepartmentDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      console.log(
-        "DepartmentGroupNodeComponent - handleEmployeeToDepartmentDrop tetiklendi!"
-      );
       e.preventDefault();
       setDraggedOver(false);
       setDraggedEmployee(null);

@@ -1,6 +1,6 @@
 import { Department, Employee } from "./orgChart";
 
-export interface EmployeeCardProps {
-  employee: Employee;
-  onEmployeeAssigned?: (employeeId: string) => void;
+export interface SidebarProps {
+  employees: Employee[];
+  onAssign?: (employeeId: string) => void;
 }

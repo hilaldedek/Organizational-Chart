@@ -30,14 +30,13 @@ export const useDragAndDrops = ({
 
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
-    // Drag başladığında gerekirse UI güncellemeleri yapılabilir
   }, []);
 
+  // Departman içi taşıma (sadece manager değişir)
   const handleIntraDepartmentMove = useCallback(
     async (sourceNodeId: string, targetNodeId: string, draggedEmployee: Employee) => {
       const requestId = `intra-dept-${sourceNodeId}-${targetNodeId}`;
       
-      // Duplicate işlem kontrolü
       if (processedRequests.has(requestId) || updatingEmployees.has(sourceNodeId)) {
         console.log("İşlem zaten yapılıyor veya tamamlanmış:", requestId);
         return;
@@ -50,28 +49,25 @@ export const useDragAndDrops = ({
         updateEmployeeInNodes(sourceNodeId, targetNodeId);
         updateEdgesForEmployee(sourceNodeId, targetNodeId);
 
-        // API çağrısı
+        // API çağrısı - departman içi manager güncellemesi
         const result = await handleEmployeeUpdate({
           person_id: sourceNodeId,
           drop_department_id: draggedEmployee.department_id?.toString() ?? "",
           drop_employee_id: targetNodeId,
         });
 
-        // API başarısız olursa UI'ı eski haline döndürmek gerekebilir
         if (!result.success) {
-          // Burada rollback işlemi yapılabilir
           showToast("error", "Güncelleme başarısız oldu, sayfa yenilenecek.");
-          // Sayfayı yenile veya state'i reload et
           window.location.reload();
         }
       } catch (error) {
-        console.error("İntra-department move hatası:", error);
+        console.error("Intra-department move hatası:", error);
         showToast("error", "Taşıma işlemi başarısız oldu.");
+        window.location.reload();
       } finally {
-        // İşlem tamamlandıktan sonra request'i kaldır
         setTimeout(() => {
           removeProcessedRequest(requestId);
-        }, 1000); // 1 saniye sonra kaldır
+        }, 1000);
       }
     },
     [
@@ -95,22 +91,14 @@ export const useDragAndDrops = ({
         return;
       }
 
-      // Mevcut çalışan mı yoksa yeni mi?
       const existingNode = nodes.find((node) => node.id === draggedEmployee.person_id.toString());
 
       if (existingNode) {
-        // Mevcut çalışan taşınıyor
         const sourceNode = nodes.find((node) => node.id === draggedNodeId);
         const targetNode = nodes.find((node) => node.id === targetNodeId);
 
         if (!sourceNode || !targetNode) {
           console.error("Source veya target node bulunamadı!", { sourceNode, targetNode });
-          return;
-        }
-
-        // Aynı departmanda mı kontrol et
-        if (!areInSameDepartmentNodes(sourceNode, targetNode)) {
-          showToast("warning", "Personeller sadece aynı departman içinde taşınabilir!");
           return;
         }
 
@@ -127,24 +115,27 @@ export const useDragAndDrops = ({
           return;
         }
 
-        handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
+        // Sadece aynı departman içinde taşıma yapılabilir
+        if (areInSameDepartmentNodes(sourceNode, targetNode)) {
+          handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
+        } else {
+          showToast("warning", "Departmanlar arası taşıma devre dışı bırakıldı.");
+        }
         return;
       }
 
-      // Sidebar'dan gelen yeni personel için işlemler
-      // Bu kısım implementation'a göre eklenebilir
-      console.log("Sidebar'dan yeni personel ekleniyor:", draggedEmployee);
+      // Sidebar’dan yeni personel ekleme devre dışı
+      showToast("warning", "Yeni personel ekleme şu anda desteklenmiyor.");
     },
     [
       nodes, 
-      handleIntraDepartmentMove, 
+      handleIntraDepartmentMove,
       findAllSubordinatesFromNodes, 
       areInSameDepartmentNodes, 
       showToast
     ]
   );
 
-  // Utility fonksiyonları da export edelim
   const checkCircularHierarchy = useCallback(
     (sourceNodeId: string, targetNodeId: string): boolean => {
       const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, nodes);

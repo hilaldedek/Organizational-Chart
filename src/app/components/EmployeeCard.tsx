@@ -1,7 +1,8 @@
 "use client";
 
 import React, { DragEvent } from "react";
-import { EmployeeCardProps } from "../types/sidebar"; // ✅ sidebar.ts içinden alıyoruz
+import { EmployeeCardProps } from "../types/employeeCard";
+
 
 const EmployeeCard: React.FC<EmployeeCardProps> = ({
   employee,

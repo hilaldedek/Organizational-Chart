@@ -1,22 +1,30 @@
 "use client";
-
+import { useState } from "react";
+import { Department, Employee } from "./types/orgChart";
 import { ReactFlowProvider } from "@xyflow/react";
-import React, { useState } from "react";
-import Sidebar from "./components/Sidebar";
-import { Department } from "./types/orgChart";
 import OrgChart from "./components/OrgChart";
-
-
+import Sidebar from "./components/Sidebar";
 
 export default function HomePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
- 
+  const [employees, setEmployees] = useState<Employee[]>([]); // employee list
+
+  const showToast = (
+    type: "success" | "error" | "warning",
+    message: string
+  ) => {
+    console.log(type, message);
+  };
+
+  const handleAssignEmployee = (employeeId: string) => {
+    console.log("Assigned employee:", employeeId);
+  };
+
   return (
-    <div className="flex font-(family-name:--font-poppins) w-full h-screen">
+    <div className="flex w-full h-screen relative">
       <ReactFlowProvider>
-        <OrgChart
-        />
-        <Sidebar departments={departments} setDepartments={setDepartments} />
+        <OrgChart newDepartment={[]} showToast={showToast} />
+        <Sidebar employees={employees} onAssign={handleAssignEmployee} />
       </ReactFlowProvider>
     </div>
   );
