@@ -40,10 +40,11 @@ export async function PUT(req: Request) {
       // Departmana ilk kişi atanıyor → manager = CEO
       const ceoResult = await client.query("SELECT person_id FROM employee WHERE role = 'CEO'");
       const ceoId = ceoResult.rows[0]?.person_id;
-
+      const managerParentsConnection= ceoId+">"+person_id;
+  
       await client.query(
-        'UPDATE employee SET department_id = $1, manager_id = $2 WHERE person_id = $3',
-        [drop_department_id, ceoId, person_id]
+        'UPDATE employee SET department_id = $1, manager_id = $2, parents_connection=$3 WHERE person_id = $4',
+        [drop_department_id, ceoId,managerParentsConnection, person_id]
       );
       // Departmanın manager_id'sini ilk atanan personel yap
       await client.query(
@@ -55,10 +56,16 @@ export async function PUT(req: Request) {
         [drop_department_id]
       );
     }else{
+      const parents_connection= await client.query(
+        "SELECT parents_connection FROM employee WHERE person_id = $1",
+        [drop_employee_id]
+      );
+
+      const parents_connection_string=parents_connection.rows[0].parents_connection+">"+person_id;
 // Employee güncelle
     await client.query(
-      "UPDATE employee SET department_id = $1, manager_id = $2 WHERE person_id = $3",
-      [drop_department_id, drop_employee_id, person_id]
+      "UPDATE employee SET department_id = $1, manager_id = $2, parents_connection=$3 WHERE person_id = $4",
+      [drop_department_id, drop_employee_id,parents_connection_string, person_id]
     );
 
     // employee_count artır
@@ -67,8 +74,6 @@ export async function PUT(req: Request) {
       [drop_department_id]
     );
     }
-
-    
 
     await client.query("COMMIT");
     return NextResponse.json({ message: "Personel departmana başarıyla eklendi." });

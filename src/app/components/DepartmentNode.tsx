@@ -169,20 +169,6 @@ export const DepartmentNodeComponent: React.FC<{
 
   return (
     <div>
-      {/* <h1>hello</h1>
-      <NodeResizer
-        color="#007acc"
-        isVisible={selected}
-        minWidth={DEPARTMENT_MIN_WIDTH}
-        minHeight={DEPARTMENT_MIN_HEIGHT}
-        handleStyle={{
-          background: "#007acc",
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-        }}
-      /> */}
-
       <div style={headerStyle}>
         <div className="text-center text-xl font-semibold">
           {data.unit_name}
@@ -218,6 +204,18 @@ export const DepartmentNodeComponent: React.FC<{
         onDragLeave={handleDragLeave}
         onDrop={handleEmployeeToDepartmentDrop}
       >
+        <NodeResizer
+          color="#007acc"
+          isVisible={selected}
+          minWidth={DEPARTMENT_MIN_WIDTH}
+          minHeight={DEPARTMENT_MIN_HEIGHT}
+          handleStyle={{
+            background: "#007acc",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+          }}
+        />
         <div
           style={{
             position: "absolute",

@@ -65,12 +65,35 @@ export async function PUT(req: Request) {
       );
     }
 
-    const managerId = drop_employee_id;
+    const sourceEmployeeParentsConnection=await client.query(
+      "SELECT parents_connection FROM employee WHERE person_id = $1",
+      [person_id]
+    );
+    const sourceParentsConnection = sourceEmployeeParentsConnection.rows[0].parents_connection;
 
+    const targetEmployeeParentsConnection=await client.query(
+      "SELECT parents_connection FROM employee WHERE person_id = $1",
+      [drop_employee_id]
+    );
+    const targetParentsConnection = targetEmployeeParentsConnection.rows[0].parents_connection;
     await client.query(
       "UPDATE employee SET manager_id = $1 WHERE person_id = $2",
-      [managerId, person_id]
+      [drop_employee_id, person_id]
     );
+    const newTargetEmployeeParentsConnection=targetParentsConnection+">"+person_id;
+    await client.query(
+      "UPDATE employee SET parents_connection = $1 WHERE person_id = $2",
+      [newTargetEmployeeParentsConnection, person_id]
+    );
+
+
+    await client.query(
+      `UPDATE employee
+       SET parents_connection = regexp_replace(parents_connection, '^' || $1, $2)
+       WHERE parents_connection LIKE $1 || '%'`,
+      [sourceParentsConnection, newTargetEmployeeParentsConnection]
+    );
+    
 
     await client.query("COMMIT");
     return NextResponse.json({ message: "Departman içi manager güncellemesi başarılı." });
