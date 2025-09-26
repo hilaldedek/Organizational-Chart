@@ -64,6 +64,8 @@ export async function PUT(req: Request) {
         { status: 400 }
       );
     }
+     
+//sürüklediğimiz employee parentları
 
     const sourceEmployeeParentsConnection=await client.query(
       "SELECT parents_connection FROM employee WHERE person_id = $1",
@@ -75,16 +77,17 @@ export async function PUT(req: Request) {
       "SELECT parents_connection FROM employee WHERE person_id = $1",
       [drop_employee_id]
     );
+    //sürüklenilenin (hedef) parentları
     const targetParentsConnection = targetEmployeeParentsConnection.rows[0].parents_connection;
     await client.query(
       "UPDATE employee SET manager_id = $1 WHERE person_id = $2",
       [drop_employee_id, person_id]
     );
     const newTargetEmployeeParentsConnection=targetParentsConnection+">"+person_id;
-    await client.query(
-      "UPDATE employee SET parents_connection = $1 WHERE person_id = $2",
-      [newTargetEmployeeParentsConnection, person_id]
-    );
+    // await client.query(
+    //   "UPDATE employee SET parents_connection = $1 WHERE person_id = $2",
+    //   [newTargetEmployeeParentsConnection, person_id]
+    // );
 
 
     await client.query(

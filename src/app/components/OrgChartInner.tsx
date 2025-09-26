@@ -29,6 +29,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     onNodesChange,
     onEdgesChange,
     setNodes,
+    setEdges,
     applyHierarchicalLayout,
   } = useOrgChartStore();
 
@@ -75,7 +76,10 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     findAllSubordinatesFromNodes,
     areInSameDepartmentNodes,
   });
-  const { handleAddEmployeeToDepartment } = useEmployeeUpdate({ showToast });
+  const {
+    handleAddEmployeeToDepartment,
+    handleMoveEmployeeBetweenDepartments,
+  } = useEmployeeUpdate({ showToast });
 
   const handleDepartmentEmployeeDrop = useCallback(
     (
@@ -89,60 +93,158 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
         position,
       });
 
-      // Bu departmanda zaten personel var mı kontrol et
-      const departmentEmployees = nodes.filter(
-        (node) => node.type === "employee" && node.parentId === departmentId
+      // Eğer employee zaten bir departmanda ise (departmanlar arası taşıma)
+      const existingEmployeeNode = nodes.find(
+        (node) =>
+          node.type === "employee" && node.id === employee.person_id.toString()
       );
 
-      if (departmentEmployees.length > 0) {
-        showToast(
-          "warning",
-          "Bu departmanda zaten personel var! Yeni personelleri mevcut personellerin üstüne sürükleyin."
+      console.log("Employee node kontrolü:", {
+        employeeId: employee.person_id.toString(),
+        existingEmployeeNode: !!existingEmployeeNode,
+        currentParentId: existingEmployeeNode?.parentId,
+        targetDepartmentId: departmentId,
+      });
+
+      if (existingEmployeeNode) {
+        // Departmanlar arası taşıma - mevcut node'u ve children'larını güncelle
+        (async () => {
+          // Hedef departmandaki mevcut employee'yi bul (drop target)
+          const targetDepartmentEmployees = nodes.filter(
+            (node) => node.type === "employee" && node.parentId === departmentId
+          );
+
+          // Eğer hedef departmanda employee yoksa, taşınan employee'yi manager yap
+          const dropEmployeeId =
+            targetDepartmentEmployees.length > 0
+              ? targetDepartmentEmployees[0].id
+              : employee.person_id.toString();
+
+          console.log("Departmanlar arası taşıma başlıyor:", {
+            person_id: employee.person_id.toString(),
+            new_department_id: departmentId,
+            drop_employee_id: dropEmployeeId,
+          });
+console.log("GELDİM Mİ")
+          const result = await handleMoveEmployeeBetweenDepartments({
+            person_id: employee.person_id.toString(),
+            new_department_id: departmentId,
+            drop_employee_id: dropEmployeeId,
+          });
+
+          console.log("API sonucu:", result);
+          if (!result.success) return;
+
+          // Taşınan employee'nin children'larını bul
+          const { nodes: currentNodes } = useOrgChartStore.getState();
+          const movedEmployeeIds = [employee.person_id.toString()];
+
+          // Children'ları bul (parents_connection'a göre)
+          const childrenNodes = currentNodes.filter((node) => {
+            if (
+              node.type !== "employee" ||
+              node.id === employee.person_id.toString()
+            )
+              return false;
+            const nodeData = node.data as any;
+            return nodeData?.parents_connection?.startsWith(
+              employee.person_id.toString()
+            );
+          });
+
+          childrenNodes.forEach((child) => movedEmployeeIds.push(child.id));
+
+          // Taşınan tüm node'ları yeni departmana güncelle
+          setNodes((prev) =>
+            prev.map((node) => {
+              if (movedEmployeeIds.includes(node.id)) {
+                return {
+                  ...node,
+                  parentId: departmentId,
+                  position: {
+                    x: position.x + (Math.random() - 0.5) * 100, // Küçük rastgele offset
+                    y: position.y + (Math.random() - 0.5) * 100,
+                  },
+                };
+              }
+              return node;
+            })
+          );
+
+          // Eski edge'leri temizle (taşınan employee'lerle ilgili tüm edge'ler)
+          setEdges((prev) =>
+            prev.filter((edge) => {
+              const sourceMoved = movedEmployeeIds.includes(edge.source);
+              const targetMoved = movedEmployeeIds.includes(edge.target);
+              // Eğer edge'in kaynağı veya hedefi taşınan employee'lerden biri ise sil
+              return !sourceMoved && !targetMoved;
+            })
+          );
+        })();
+      } else {
+        // İlk atama - yeni node oluştur
+        const departmentEmployees = nodes.filter(
+          (node) => node.type === "employee" && node.parentId === departmentId
         );
-        return;
-      }
 
-      (async () => {
-        const result = await handleAddEmployeeToDepartment({
-          person_id: employee.person_id.toString(),
-          drop_department_id: departmentId,
-          drop_employee_id: employee.person_id.toString(),
-        });
-        if (!result.success) return;
-
-        const { nodes: currentNodes } = useOrgChartStore.getState();
-        const deptGroupNode = currentNodes.find((n) => n.id === departmentId);
-        if (!deptGroupNode) return;
-
-        const newNode: Node = {
-          id: employee.person_id.toString(),
-          type: "employee",
-          position: {
-            x: deptGroupNode.position.x + 50,
-            y: deptGroupNode.position.y + 80,
-          },
-          data: {
-            ...employee,
-            person_id: employee.person_id,
-            isManager: true,
-            onDragStart: handleEmployeeDragStart,
-            onDrop: handleEmployeeDrop,
-            isDragTarget: false,
-            isBeingDragged: false,
-          },
-          draggable: true,
-          parentId: departmentId,
-          extent: "parent",
-          expandParent: true,
-        };
-        setNodes((prev) => [...prev, newNode]);
-        // Atama başarılıysa callback'i çağır
-        if (onEmployeeAssigned) {
-          onEmployeeAssigned(employee.person_id.toString());
+        if (departmentEmployees.length > 0) {
+          showToast(
+            "warning",
+            "Bu departmanda zaten personel var! Yeni personelleri mevcut personellerin üstüne sürükleyin."
+          );
+          return;
         }
-      })();
+
+        (async () => {
+          const result = await handleAddEmployeeToDepartment({
+            person_id: employee.person_id.toString(),
+            drop_department_id: departmentId,
+            drop_employee_id: employee.person_id.toString(),
+          });
+          if (!result.success) return;
+
+          const { nodes: currentNodes } = useOrgChartStore.getState();
+          const deptGroupNode = currentNodes.find((n) => n.id === departmentId);
+          if (!deptGroupNode) return;
+
+          const newNode: Node = {
+            id: employee.person_id.toString(),
+            type: "employee",
+            position: {
+              x: deptGroupNode.position.x + 50,
+              y: deptGroupNode.position.y + 80,
+            },
+            data: {
+              ...employee,
+              person_id: employee.person_id,
+              isManager: true,
+              onDragStart: handleEmployeeDragStart,
+              onDrop: handleEmployeeDrop,
+              isDragTarget: false,
+              isBeingDragged: false,
+            },
+            draggable: true,
+            parentId: departmentId,
+            extent: "parent",
+            expandParent: true,
+          };
+          setNodes((prev) => [...prev, newNode]);
+          // Atama başarılıysa callback'i çağır
+          if (onEmployeeAssigned) {
+            onEmployeeAssigned(employee.person_id.toString());
+          }
+        })();
+      }
     },
-    [nodes, showToast, handleAddEmployeeToDepartment, onEmployeeAssigned]
+    [
+      nodes,
+      showToast,
+      handleAddEmployeeToDepartment,
+      handleMoveEmployeeBetweenDepartments,
+      onEmployeeAssigned,
+      setNodes,
+      setEdges,
+    ]
   );
 
   // Store'a department drop handler'ını kaydet

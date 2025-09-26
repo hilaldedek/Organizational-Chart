@@ -172,8 +172,8 @@ export const useOrgChartStore = create<OrgChartState>()(
             const children = updatedNodes.filter(n => n.type === 'employee' && n.parentId === group.id);
             if (children.length === 0) continue;
 
-            const nodeWidth = 180;
-            const nodeHeight = 120;
+          const nodeWidth = 180;
+          const nodeHeight = 120;
 
             const elkNodes = children.map(child => ({
               id: child.id,
@@ -183,13 +183,13 @@ export const useOrgChartStore = create<OrgChartState>()(
 
             const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
 
-            const elkGraph = {
+          const elkGraph = {
               id: `group-${group.id}`,
-              children: elkNodes,
-              edges: elkEdges,
-              layoutOptions: {
-                'elk.algorithm': 'layered',
-                'elk.direction': 'DOWN',
+            children: elkNodes,
+            edges: elkEdges,
+            layoutOptions: {
+              'elk.algorithm': 'layered',
+              'elk.direction': 'DOWN',
                 'elk.spacing.nodeNode': '120',
                 'elk.spacing.edgeNode': '80',
                 'elk.layered.spacing.nodeNodeBetweenLayers': '160'
@@ -212,7 +212,7 @@ export const useOrgChartStore = create<OrgChartState>()(
                 };
               }
             });
-          }
+            }
 
           set({ nodes: updatedNodes });
         } catch (error) {
@@ -234,8 +234,8 @@ export const useOrgChartStore = create<OrgChartState>()(
             const children = updatedNodes.filter(n => n.type === 'employee' && n.parentId === group.id);
             if (children.length === 0) continue;
 
-            const nodeWidth = 180;
-            const nodeHeight = 120;
+          const nodeWidth = 180;
+          const nodeHeight = 120;
 
             const elkNodes = children.map(child => ({
               id: child.id,
@@ -243,12 +243,12 @@ export const useOrgChartStore = create<OrgChartState>()(
               height: nodeHeight,
             }));
 
-            const elkGraph = {
+          const elkGraph = {
               id: `group-${group.id}`,
-              children: elkNodes,
-              layoutOptions: {
-                'elk.algorithm': 'layered',
-                'elk.direction': 'DOWN',
+            children: elkNodes,
+            layoutOptions: {
+              'elk.algorithm': 'layered',
+              'elk.direction': 'DOWN',
                 'elk.spacing.nodeNode': '100',
                 'elk.spacing.edgeNode': '60',
                 'elk.layered.spacing.nodeNodeBetweenLayers': '120'
@@ -273,7 +273,7 @@ export const useOrgChartStore = create<OrgChartState>()(
                 };
               }
             });
-          }
+            }
 
           set({ nodes: updatedNodes });
         } catch (error) {

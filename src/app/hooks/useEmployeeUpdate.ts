@@ -132,9 +132,69 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
     [handleIntraDepartmentManagerUpdate]
   );
 
+  // Departmanlar arası taşıma
+  const handleMoveEmployeeBetweenDepartments = useCallback(
+    async ({ 
+      person_id, 
+      new_department_id, 
+      drop_employee_id 
+    }: { 
+      person_id: string; 
+      new_department_id: string; 
+      drop_employee_id: string; 
+    }) => {
+      if (updatingEmployees.has(person_id)) {
+        showToast("warning", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
+        return { success: false };
+      }
+
+      try {
+        addUpdatingEmployee(person_id);
+        console.log("HELLOO")
+        console.log("API'ye gönderilen veri:", {
+          person_id, 
+          new_department_id,
+          drop_employee_id
+        });
+        
+        const response = await fetch("/api/move-employee-between-departments", {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            person_id, 
+            new_department_id,
+            drop_employee_id
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`;
+          showToast("error", `Hata: ${errorMessage}`);
+          return { success: false };
+        }
+
+        showToast("success", "Personel ve alt personelleri başarıyla yeni departmana taşındı.");
+        return { success: true, movedEmployees: data.movedEmployees };
+      } catch (error) {
+        console.error("API hatası:", error);
+        const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
+        showToast("error", `Sunucu hatası: ${errorMessage}`);
+        return { success: false };
+      } finally {
+        removeUpdatingEmployee(person_id);
+      }
+    },
+    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees]
+  );
+
   return { 
     handleEmployeeUpdate,
     handleIntraDepartmentManagerUpdate,
-    handleAddEmployeeToDepartment
+    handleAddEmployeeToDepartment,
+    handleMoveEmployeeBetweenDepartments
   };
 };

@@ -42,9 +42,18 @@ export const DepartmentNodeComponent: React.FC<{
     return departmentEmployees.length > 0;
   }, [departmentEmployees.length, data.unit_id]);
 
-  // Departman yöneticisini bul
+  // Departman yöneticisini bul - önce isManager field'ına bak, yoksa ilk employee'yi al
   const departmentManager = useMemo(() => {
-    return departmentEmployees.find((node) => node.data?.isManager === true);
+    let manager = departmentEmployees.find(
+      (node) => node.data?.isManager === true
+    );
+
+    // Eğer isManager field'ı ile manager bulunamazsa, ilk employee'yi manager olarak kabul et
+    if (!manager && departmentEmployees.length > 0) {
+      manager = departmentEmployees[0];
+    }
+
+    return manager;
   }, [departmentEmployees]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -118,15 +127,21 @@ export const DepartmentNodeComponent: React.FC<{
         const parsed = JSON.parse(dropData);
         console.log("Department drop data:", parsed);
 
-        // Sadece sidebar'dan gelen employee'leri kabul et (ilk atama için)
-        if (parsed.type === "employee" || (!parsed.type && parsed.person_id)) {
+        // Sidebar'dan gelen employee'ler (ilk atama) veya departmanlar arası taşınan employee'ler
+        if (
+          parsed.type === "employee" ||
+          parsed.type === "employee-node" ||
+          (!parsed.type && parsed.person_id)
+        ) {
           const employee: Employee =
             parsed.type === "employee" ? parsed.data : parsed;
 
-          // Departmanda zaten personel varsa reddet
-          if (departmentHasEmployees) {
-            console.log("Department already has employees, rejecting drop");
-            return;
+          // İlk atama için departmanda zaten personel varsa reddet (departmanlar arası taşıma için değil)
+          if (!parsed.type || parsed.type === "employee") {
+            if (departmentHasEmployees) {
+              console.log("Department already has employees, rejecting drop");
+              return;
+            }
           }
 
           // Relative position hesapla
@@ -178,7 +193,9 @@ export const DepartmentNodeComponent: React.FC<{
           <span className="text-[#252A34]">Yönetici:</span>
           {departmentManager ? (
             <span className="text-[#4caf50] mr-1 ml-0.5">
-              {`${departmentManager.data.first_name} ${departmentManager.data.last_name}`}
+              {`${departmentManager.data?.first_name || "Bilinmeyen"} ${
+                departmentManager.data?.last_name || "Bilinmeyen"
+              }`}
             </span>
           ) : (
             <span className="text-[#f44336] mr-1 ml-0.5">Atanmamış</span>

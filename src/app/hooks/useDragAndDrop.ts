@@ -115,13 +115,7 @@ const result = await handleIntraDepartmentManagerUpdate({
           return;
         }
 
-        // Sadece aynı departman içinde taşıma yapılabilir
-        if (areInSameDepartmentNodes(sourceNode, targetNode)) {
-          handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
-        } else {
-          showToast("warning", "Departmanlar arası taşıma devre dışı bırakıldı.");
-        }
-        return;
+      
       }
       if (!existingNode) {
         const { nodes: currentNodes } = useOrgChartStore.getState();
