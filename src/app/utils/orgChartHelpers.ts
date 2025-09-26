@@ -7,6 +7,7 @@ export const getContainerStyle = (draggedOver: boolean): CSSProperties => ({
   height: "100%",
   minWidth: "300px",
   minHeight: "400px",
+  marginTop:"100px",
   border: draggedOver ? "3px dashed #4caf50" : "2px solid #ddd",
   borderRadius: "12px",
   background: draggedOver ? "rgba(76, 175, 80, 0.1)" : "#f9f9f9",

@@ -7,12 +7,19 @@ import EmployeeCard from "./EmployeeCard";
 import { useOrgChartStore } from "../stores/orgChartStore";
 import { SidebarProps } from "../types/sidebar";
 
-const Sidebar: React.FC<SidebarProps> = () => {
-  const { departments, setDepartments } = useOrgChartStore();
+const Sidebar: React.FC<SidebarProps> = ({ employees, onAssign }) => {
+  const {
+    departments,
+    setDepartments,
+    setNodes,
+    nodes,
+    departmentDropHandler,
+    unassignedEmployees,
+    setUnassignedEmployees,
+    removeUnassignedEmployee,
+  } = useOrgChartStore();
 
-  const [unassignedEmployees, setUnassignedEmployees] = useState<Employee[]>(
-    []
-  );
+  // Local state kaldırıldı, sadece store'dan geliyor
   const [newEmployeeFirstName, setNewEmployeeFirstName] = useState("");
   const [newEmployeeLastName, setNewEmployeeLastName] = useState("");
   const [newEmployeeTitle, setNewEmployeeTitle] = useState("");
@@ -28,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const employees: Employee[] = await response.json();
-        setUnassignedEmployees(employees);
+        setUnassignedEmployees(employees); // Store'a kaydet
       } catch (err) {
         console.error("Atanmamış personeller alınırken hata:", err);
         toast.error("⚠️ Personel listesi alınamadı!");
@@ -36,7 +43,18 @@ const Sidebar: React.FC<SidebarProps> = () => {
     };
 
     fetchUnassignedEmployees();
-  }, []);
+  }, [setUnassignedEmployees]);
+
+  // Dışarıdan atama callback'i gelirse, ilgili çalışanı listeden kaldır
+  React.useEffect(() => {
+    if (!onAssign) return;
+    // onAssign fonksiyonunu, çalışan atandığında çağırmak için bir wrapper fonksiyon oluştur
+    const handleAssign = (employeeId: string) => {
+      removeUnassignedEmployee(employeeId);
+    };
+    // onAssign fonksiyonunu handleAssign ile eşleştir
+    (Sidebar as any).handleAssign = handleAssign;
+  }, [onAssign, removeUnassignedEmployee]);
 
   const validateEmployeeForm = (): boolean => {
     if (!newEmployeeFirstName.trim()) {
@@ -90,7 +108,8 @@ const Sidebar: React.FC<SidebarProps> = () => {
       }
 
       const newEmployee: Employee = await response.json();
-      setUnassignedEmployees((prev) => [...prev, newEmployee]);
+      // Store'a yeni employee'yi ekle
+      setUnassignedEmployees([...unassignedEmployees, newEmployee]);
 
       // Form temizle
       setNewEmployeeFirstName("");
@@ -129,6 +148,26 @@ const Sidebar: React.FC<SidebarProps> = () => {
       const newDepartment = await response.json();
       setDepartments([...departments, newDepartment]);
 
+      // Org chart'a yeni departman node'unu anında ekle
+      const index = departments.length; // yeni eklenecek departman için basit konumlama
+      const position = {
+        x: 100 + (index % 3) * 400,
+        y: 200 + Math.floor(index / 3) * 300,
+      };
+      const newDeptNode = {
+        id: `${newDepartment.unit_id}`,
+        type: "group" as const,
+        position,
+        data: {
+          unit_name: newDepartment.unit_name,
+          unit_id: newDepartment.unit_id.toString(),
+          onEmployeeDrop: departmentDropHandler,
+        },
+        style: { width: "auto", height: "auto" },
+        draggable: true,
+      };
+      setNodes((prev: any) => [...prev, newDeptNode]);
+
       // Form temizle
       setNewDepartmentName("");
       setNewDepartmentMaxCapacity("");
@@ -162,10 +201,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
                 key={employee.person_id}
                 employee={employee}
                 onEmployeeAssigned={(employeeId: string) => {
-                  // Personel atandığında listeden kaldır
-                  setUnassignedEmployees((prev) =>
-                    prev.filter((emp) => emp.person_id !== employeeId)
-                  );
+                  console.log(`Employee ${employeeId} başarıyla atandı`);
                 }}
               />
             ))
@@ -188,7 +224,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
             placeholder="Adı"
             value={newEmployeeFirstName}
             onChange={(e) => setNewEmployeeFirstName(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, handleAddEmployee)}
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"
             maxLength={50}
           />
@@ -197,7 +232,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
             placeholder="Soyadı"
             value={newEmployeeLastName}
             onChange={(e) => setNewEmployeeLastName(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, handleAddEmployee)}
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"
             maxLength={50}
           />
@@ -206,7 +240,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
             placeholder="Ünvanı"
             value={newEmployeeTitle}
             onChange={(e) => setNewEmployeeTitle(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, handleAddEmployee)}
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"
             maxLength={100}
           />
@@ -237,7 +270,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
             placeholder="Birim Adı"
             value={newDepartmentName}
             onChange={(e) => setNewDepartmentName(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, handleAddDepartment)}
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"
             maxLength={100}
           />
@@ -246,7 +278,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
             placeholder="Birimdeki Max Personel Sayısı"
             value={newDepartmentMaxCapacity}
             onChange={(e) => setNewDepartmentMaxCapacity(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, handleAddDepartment)}
             min="1"
             max="10"
             className="w-full p-2 border border-[#7D7C7C] rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#96B6C5]"

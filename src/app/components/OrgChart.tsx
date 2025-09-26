@@ -4,16 +4,21 @@ import OrgChartInner from "./OrgChartInner";
 
 import { toast, ToastContainer } from "react-toastify";
 
-const OrgChart: React.FC<OrgChartInnerProps> = ({ newDepartment }) => {
-  const showToast = (type: "success" | "error" | "warning", message: string) => {
-    if (type === "success") toast.success(message);
-    else if (type === "error") toast.error(message);
-    else if (type === "warning") toast.warning(message);
-  };
+interface OrgChartProps extends OrgChartInnerProps {
+  onEmployeeAssigned?: (employeeId: string) => void;
+}
 
+const OrgChart: React.FC<OrgChartProps> = ({
+  newDepartment,
+  showToast,
+  onEmployeeAssigned,
+}) => {
   return (
     <ReactFlowProvider>
-      <OrgChartInner showToast={showToast} />
+      <OrgChartInner
+        showToast={showToast}
+        onEmployeeAssigned={onEmployeeAssigned}
+      />
       <ToastContainer position="top-right" autoClose={3000} />
     </ReactFlowProvider>
   );

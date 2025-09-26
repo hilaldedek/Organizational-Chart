@@ -12,8 +12,9 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
     addUpdatingEmployee, 
     removeUpdatingEmployee, 
     updatingEmployees,
-    nodes ,
+    nodes,
     setAllEmployees,
+    removeUnassignedEmployee, // Store'dan yeni eklenen fonksiyonu al
   } = useOrgChartStore();
 
   // Departman içi manager güncelleme (sadece manager_id değişir)
@@ -26,12 +27,12 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
 
       try {
         addUpdatingEmployee(person_id);
-const { nodes: currentNodes } = useOrgChartStore.getState();
-const targetNode = currentNodes.find((n) => n.id === drop_employee_id);
-if (!targetNode) {
-showToast("error", "Hedef node bulunamadı.");
-  return;
-     }
+        const { nodes: currentNodes } = useOrgChartStore.getState();
+        const targetNode = currentNodes.find((n) => n.id === drop_employee_id);
+        if (!targetNode) {
+          showToast("error", "Hedef node bulunamadı.");
+          return { success: false };
+        }
         
         const response = await fetch("/api/update-employee-and-department", {
           method: "PUT",
@@ -53,6 +54,8 @@ showToast("error", "Hedef node bulunamadı.");
           return { success: false };
         }
 
+        // Başarılı olursa personeli atanmamış listesinden kaldır
+        removeUnassignedEmployee(person_id);
         showToast("success", "Departman içi yönetici güncellemesi başarılı.");
         return { success: true };
       } catch (error) {
@@ -64,7 +67,7 @@ showToast("error", "Hedef node bulunamadı.");
         removeUpdatingEmployee(person_id);
       }
     },
-    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees]
+    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee]
   );
 
   // Yeni personel departmana ekleme (hem department_id hem manager_id değişir)
@@ -98,7 +101,8 @@ showToast("error", "Hedef node bulunamadı.");
           showToast("error", `Hata: ${errorMessage}`);
           return { success: false };
         }
-
+        
+        removeUnassignedEmployee(person_id);
         showToast("success", "Personel departmana başarıyla eklendi.");
         return { success: true };
       } catch (error) {
@@ -110,23 +114,22 @@ showToast("error", "Hedef node bulunamadı.");
         removeUpdatingEmployee(person_id);
       }
     },
-    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees]
+    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee]
   );
 
   // Hangi API'yi kullanacağını belirleyen ana fonksiyon
   const handleEmployeeUpdate = useCallback(
-     async ({ person_id, drop_department_id, drop_employee_id }:UpdateEmployeeParams) => {
-           
-
-           return await handleIntraDepartmentManagerUpdate({
-             person_id, drop_department_id, drop_employee_id
-           });},
-    [
-      nodes, 
-      showToast, 
-      handleIntraDepartmentManagerUpdate, 
-      handleAddEmployeeToDepartment
-    ]
+    async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
+      // API çağrısı tamamlandığında başarılı olursa personeli atanmamış listesinden kaldır
+      const result = await handleIntraDepartmentManagerUpdate({
+        person_id, 
+        drop_department_id, 
+        drop_employee_id
+      });
+      
+      return result;
+    },
+    [handleIntraDepartmentManagerUpdate]
   );
 
   return { 

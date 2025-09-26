@@ -16,9 +16,13 @@ import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 
 interface OrgChartInnerProps {
   showToast: (type: "success" | "error" | "warning", message: string) => void;
+  onEmployeeAssigned?: (employeeId: string) => void;
 }
 
-const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
+const OrgChartInner: React.FC<OrgChartInnerProps> = ({
+  showToast,
+  onEmployeeAssigned,
+}) => {
   const {
     nodes,
     edges,
@@ -132,10 +136,21 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
           expandParent: true,
         };
         setNodes((prev) => [...prev, newNode]);
+        // Atama başarılıysa callback'i çağır
+        if (onEmployeeAssigned) {
+          onEmployeeAssigned(employee.person_id.toString());
+        }
       })();
     },
-    [nodes, showToast, handleAddEmployeeToDepartment]
+    [nodes, showToast, handleAddEmployeeToDepartment, onEmployeeAssigned]
   );
+
+  // Store'a department drop handler'ını kaydet
+  useEffect(() => {
+    useOrgChartStore
+      .getState()
+      .setDepartmentDropHandler?.(handleDepartmentEmployeeDrop);
+  }, [handleDepartmentEmployeeDrop]);
 
   // useOrgChart hook'u - sadece gerekli handler'ları geçiyoruz
   useOrgChart({
@@ -193,7 +208,11 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({ showToast }) => {
         onDrop={onDrop}
         fitView
         nodeTypes={nodeTypes}
-        connectionLineStyle={{ stroke: "#555", strokeWidth: 2,strokeDasharray: undefined }}
+        connectionLineStyle={{
+          stroke: "#555",
+          strokeWidth: 2,
+          strokeDasharray: undefined,
+        }}
         connectionLineType={ConnectionLineType.SmoothStep}
       >
         <Background color="#44444E" gap={20} variant={BackgroundVariant.Dots} />
