@@ -25,8 +25,9 @@ interface OrgChartState {
   setDepartments: (departments: Department[]) => void;
   setCeo: (ceo: Employee[]) => void;
   setAllEmployees: (employees: Employee[]) => void;
-  setUnassignedEmployees: (employees: Employee[]) => void; // Yeni eklenen action
-  removeUnassignedEmployee: (employeeId: string) => void; // Yeni eklenen action
+  setUnassignedEmployees: (employees: Employee[]) => void; 
+  addUnassignedEmployees: (employees: Employee[]) => void; 
+  removeUnassignedEmployee: (employeeId: string) => void; 
   setLoading: (loading: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   onNodesChange: (changes: NodeChange[]) => void;
@@ -82,6 +83,14 @@ export const useOrgChartStore = create<OrgChartState>()(
       setAllEmployees: (allEmployees) => set({ allEmployees }),
 
       setUnassignedEmployees: (unassignedEmployees) => set({ unassignedEmployees }),
+
+      addUnassignedEmployees: (newEmployees) => set((state) => {
+        const existing = new Map(state.unassignedEmployees.map(e => [e.person_id, e]));
+        newEmployees.forEach(emp => {
+          if (!existing.has(emp.person_id)) existing.set(emp.person_id, emp);
+        });
+        return { unassignedEmployees: Array.from(existing.values()) };
+      }),
 
       removeUnassignedEmployee: (employeeId) => set((state) => ({
         unassignedEmployees: state.unassignedEmployees.filter(emp => emp.person_id !== employeeId)
