@@ -64,6 +64,9 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
             dropData.employee || dropData,
             sourceId
           ); // ✅ optional chaining
+          console.log("DROP DATA: EmployeeNode", data.person_id,
+            dropData.employee || dropData,
+            sourceId);
         }
       } catch (error) {
         console.error("Drop verisi parse edilemedi:", error);

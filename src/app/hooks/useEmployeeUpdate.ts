@@ -175,12 +175,13 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
         // drop_employee_id varsa body'ye ekle, yoksa ekleme
         const requestBody: any = {
           person_id, 
-          new_department_id
+          new_department_id,
+          drop_employee_id
         };
         
-        if (drop_employee_id) {
-          requestBody.drop_employee_id = drop_employee_id;
-        }
+        // if (drop_employee_id) {
+        //   requestBody.drop_employee_id = drop_employee_id;
+        // }
         
         const response = await fetch("/api/move-employee-between-departments", {
           method: "PUT",

@@ -123,18 +123,18 @@ const result = await handleIntraDepartmentManagerUpdate({
           (node) => node.type === "employee" && node.parentId === newDepartmentId
         );
 
-        let targetManagerId: string | null = null;
+        // let targetManagerId: string | null = null;
         
-        if (targetDepartmentEmployees.length > 0) {
-          // Departmanda personel varsa ilk personeli manager olarak kullan
-          targetManagerId = targetDepartmentEmployees[0].id;
-        }
+        // if (targetDepartmentEmployees.length > 0) {
+        //   // Departmanda personel varsa ilk personeli manager olarak kullan
+        //   targetManagerId = targetDepartmentEmployees[0].id;
+        // }
         // Eğer departmanda personel yoksa targetManagerId null kalır
-
+console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepartmentId,"drop_employee_id: ",targetNodeId)
         const result = await handleMoveEmployeeBetweenDepartments({
           person_id: sourceNodeId,
           new_department_id: newDepartmentId,
-          drop_employee_id: targetManagerId || undefined, // null ise undefined gönder
+          drop_employee_id: targetNodeId || undefined, // null ise undefined gönder
         });
 
         if(!result?.success){showToast("error","Departmanlar arası taşıma başarısız."); return;}
@@ -155,8 +155,8 @@ const result = await handleIntraDepartmentManagerUpdate({
                 data: {
                   ...node.data,
                   department_id: parseInt(newDepartmentId),
-                  manager_id: node.id === sourceNodeId && targetManagerId
-                    ? parseInt(targetManagerId)
+                  manager_id: node.id === sourceNodeId && targetNodeId
+                    ? parseInt(targetNodeId)
                     : node.data.manager_id,
                 }
               };
@@ -166,8 +166,8 @@ const result = await handleIntraDepartmentManagerUpdate({
         }
         
         // Edge'leri güncelle (eğer targetManagerId varsa)
-        if (targetManagerId) {
-          updateEdgesForEmployee(sourceNodeId, targetManagerId);
+        if (targetNodeId) {
+          updateEdgesForEmployee(sourceNodeId, targetNodeId);
         }
         
         showToast("success", `Personel ve ${result.movedEmployees || 1} alt personeli yeni departmana taşındı.`);
@@ -201,13 +201,13 @@ const result = await handleIntraDepartmentManagerUpdate({
       }
 
       const existingNode = currentNodes.find((node) => node.id === draggedEmployee.person_id.toString());
-      console.log("existingNode: ",existingNode)
+      console.log("existingNode: useDragAndDrop-handleEmployeeDrop",existingNode)
 
       if (existingNode) {
         const sourceNode = currentNodes.find((node) => node.id === draggedNodeId);
         const targetNode = currentNodes.find((node) => node.id === targetNodeId);
-        console.log("sourceNode: ",sourceNode)
-        console.log("targetNode: ",targetNode)
+        console.log("sourceNode: useDragAndDrop-handleEmployeeDrop",sourceNode)
+        console.log("targetNode: useDragAndDrop-handleEmployeeDrop",targetNode)
 
         if (!sourceNode || !targetNode) {
           console.error("Source veya target node bulunamadı!", { sourceNode, targetNode });

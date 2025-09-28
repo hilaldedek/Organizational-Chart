@@ -8,10 +8,7 @@ import { useOrgChartStore } from "./stores/orgChartStore";
 
 export default function HomePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]); // employee list
-  const { nodes } = useOrgChartStore();
-
-  console.log("PAGE:TSX'DEN NODES: ", nodes);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   const handleAssignEmployee = (employeeId: string) => {
     console.log("Assigned employee:", employeeId);
