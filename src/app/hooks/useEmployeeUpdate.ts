@@ -10,9 +10,8 @@ export const useEmployeeUpdate = () => {
     removeUpdatingEmployee, 
     updatingEmployees,
     nodes,
-    setAllEmployees,
-    removeUnassignedEmployee, // Store'dan yeni eklenen fonksiyonu al
-    setNodes, // Nodes güncelleme için eklendi
+    removeUnassignedEmployee,
+    setNodes,
   } = useOrgChartStore();
 
   // Departman içi manager güncelleme (sadece manager_id değişir)
@@ -149,7 +148,7 @@ export const useEmployeeUpdate = () => {
   );
 
   // Departmanlar arası taşıma
-  const handleMoveEmployeeBetweenDepartments = useCallback(
+const handleMoveEmployeeBetweenDepartments = useCallback(
     async ({ 
       person_id, 
       new_department_id, 

@@ -23,7 +23,7 @@ export const useDragAndDrops = ({
     setNodes,
   } = useOrgChartStore();
   
-  const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate } = useEmployeeUpdate();
+  const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate, handleMoveEmployeeBetweenDepartments } = useEmployeeUpdate();
 
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
@@ -100,6 +100,96 @@ const result = await handleIntraDepartmentManagerUpdate({
     ]
   );
 
+  const handleInterDepartmentMove = useCallback(
+    async (sourceNodeId: string, targetNodeId: string, draggedEmployee: Employee) => {
+      const { nodes: currentNodes } = useOrgChartStore.getState();
+      const targetNode = currentNodes.find((n) => n.id === targetNodeId);
+      if(!targetNode){showToast("error","Hedef node bulunamadı."); return;}
+      
+      const newDepartmentId = targetNode.parentId?.toString();
+      if(!newDepartmentId){
+        showToast("error","Hedef departman bulunamadı."); return;
+      }
+
+      const requestId = `inter-dept-${sourceNodeId}-${targetNodeId}`;
+      
+      if (processedRequests.has(requestId) || updatingEmployees.has(sourceNodeId)) return;
+
+      try {
+        addProcessedRequest(requestId);
+        
+        // Hedef departmanın manager'ını bul
+        const targetDepartmentEmployees = currentNodes.filter(
+          (node) => node.type === "employee" && node.parentId === newDepartmentId
+        );
+
+        let targetManagerId: string | null = null;
+        
+        if (targetDepartmentEmployees.length > 0) {
+          // Departmanda personel varsa ilk personeli manager olarak kullan
+          targetManagerId = targetDepartmentEmployees[0].id;
+        }
+        // Eğer departmanda personel yoksa targetManagerId null kalır
+
+        const result = await handleMoveEmployeeBetweenDepartments({
+          person_id: sourceNodeId,
+          new_department_id: newDepartmentId,
+          drop_employee_id: targetManagerId || undefined, // null ise undefined gönder
+        });
+
+        if(!result?.success){showToast("error","Departmanlar arası taşıma başarısız."); return;}
+        
+        // Taşınan employee'ları yeni departmana taşı
+        const sourceNode = currentNodes.find((n) => n.id === sourceNodeId);
+        if (sourceNode) {
+          // Tüm alt personelleri bul
+          const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, currentNodes);
+          const allMovedNodes = [sourceNode, ...allSubordinates];
+          
+          // Tüm taşınan node'ları yeni departmana taşı
+          setNodes((prev) => prev.map((node) => {
+            if (allMovedNodes.some(movedNode => movedNode.id === node.id)) {
+              return {
+                ...node,
+                parentId: newDepartmentId,
+                data: {
+                  ...node.data,
+                  department_id: parseInt(newDepartmentId),
+                  manager_id: node.id === sourceNodeId && targetManagerId
+                    ? parseInt(targetManagerId)
+                    : node.data.manager_id,
+                }
+              };
+            }
+            return node;
+          }));
+        }
+        
+        // Edge'leri güncelle (eğer targetManagerId varsa)
+        if (targetManagerId) {
+          updateEdgesForEmployee(sourceNodeId, targetManagerId);
+        }
+        
+        showToast("success", `Personel ve ${result.movedEmployees || 1} alt personeli yeni departmana taşındı.`);
+
+      } finally {
+        setTimeout(() => {
+          removeProcessedRequest(requestId);
+        }, 1000);
+      }
+    },
+    [
+      processedRequests, 
+      updatingEmployees, 
+      handleMoveEmployeeBetweenDepartments, 
+      updateEdgesForEmployee,
+      addProcessedRequest,
+      removeProcessedRequest,
+      showToast,
+      findAllSubordinatesFromNodes
+    ]
+  );
+
   const handleEmployeeDrop = useCallback(
     (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => {
       console.log("handleEmployeeDrop tetiklendi!", { targetNodeId, draggedNodeId,draggedEmployee });
@@ -139,8 +229,8 @@ const result = await handleIntraDepartmentManagerUpdate({
 
         if(sourceNode.data.department_id !== targetNode.data.department_id){
           console.log("DEPARTMANLAR ARASI TAŞIMA")
-          // handleMoveEmployeeBetweenDepartments(draggedNodeId, targetNodeId, draggedEmployee);
-          // TODO: Departmanlar arası taşıma implementasyonu
+          handleInterDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
+        
         } else {
           console.log("DEPARTMAN İÇİ TAŞIMA")
           handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
@@ -238,6 +328,7 @@ const result = await handleIntraDepartmentManagerUpdate({
     handleEmployeeDragStart, 
     handleEmployeeDrop, 
     handleIntraDepartmentMove,
+    handleInterDepartmentMove,
     checkCircularHierarchy,
     checkSameDepartment,
   };
