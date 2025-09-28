@@ -80,18 +80,22 @@ const result = await handleIntraDepartmentManagerUpdate({
 
   const handleEmployeeDrop = useCallback(
     (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => {
-      console.log("handleEmployeeDrop tetiklendi!", { targetNodeId, draggedNodeId });
+      console.log("handleEmployeeDrop tetiklendi!", { targetNodeId, draggedNodeId,draggedEmployee });
       const {nodes:currentNodes} = useOrgChartStore.getState();
+      console.log("currentNodes: ",currentNodes)
       if (!currentNodes.length) {
         console.warn("Nodes dizisi boş!");
         return;
       }
 
       const existingNode = currentNodes.find((node) => node.id === draggedEmployee.person_id.toString());
+      console.log("existingNode: ",existingNode)
 
       if (existingNode) {
         const sourceNode = currentNodes.find((node) => node.id === draggedNodeId);
         const targetNode = currentNodes.find((node) => node.id === targetNodeId);
+        console.log("sourceNode: ",sourceNode)
+        console.log("targetNode: ",targetNode)
 
         if (!sourceNode || !targetNode) {
           console.error("Source veya target node bulunamadı!", { sourceNode, targetNode });
@@ -111,10 +115,16 @@ const result = await handleIntraDepartmentManagerUpdate({
           return;
         }
 
-      
-      }
-      if (!existingNode) {
-        
+        if(sourceNode.data.department_id !== targetNode.data.department_id){
+          console.log("DEPARTMANLAR ARASI TAŞIMA")
+          // handleMoveEmployeeBetweenDepartments(draggedNodeId, targetNodeId, draggedEmployee);
+          // TODO: Departmanlar arası taşıma implementasyonu
+        } else {
+          console.log("DEPARTMAN İÇİ TAŞIMA")
+          handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
+        }
+      } else {
+        // Sidebar'dan yeni personel ekleme
         const { nodes: currentNodes } = useOrgChartStore.getState();
         const targetNode = currentNodes.find((n) => n.id === targetNodeId);
         const departmentId = targetNode?.parentId?.toString();
@@ -133,7 +143,7 @@ const result = await handleIntraDepartmentManagerUpdate({
           });
           if (!result.success) return;
       
-          // 2) UI: yeni node’u aynı departmanda oluştur
+          // 2) UI: yeni node'u aynı departmanda oluştur
           const newNode: Node = {
             id: draggedEmployee.person_id.toString(),
             type: "employee",
@@ -162,18 +172,17 @@ const result = await handleIntraDepartmentManagerUpdate({
           updateEdgesForEmployee(newNode.id, targetNodeId);
           showToast("success", "Personel eklendi ve bağlandı.");
         })();
-      
-        return;
       }
-      // Sidebar’dan yeni personel ekleme devre dışı
-      showToast("warn", "Yeni personel ekleme şu anda desteklenmiyor.");
     },
     [
       nodes, 
       handleIntraDepartmentMove,
       findAllSubordinatesFromNodes, 
       areInSameDepartmentNodes, 
-      showToast
+      showToast,
+      handleAddEmployeeToDepartment,
+      updateEdgesForEmployee,
+      setNodes
     ]
   );
 

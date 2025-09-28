@@ -151,8 +151,6 @@ export const useOrgChartStore = create<OrgChartState>()(
           type: "smoothstep" as const,
           animated: true,
           style: { stroke: "#4caf50", strokeWidth: 2,strokeDasharray: undefined },
-          label:"delete",
-          labelStyle: { fontSize: 10 },
         };
         return { edges: [...filteredEdges, newEdge] };
       }),

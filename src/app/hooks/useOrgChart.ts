@@ -3,12 +3,12 @@ import { useEffect, useRef } from "react";
 import { Node } from "@xyflow/react";
 import { Department, Employee, UseOrgChartParams } from "../types/orgChart";
 import { useOrgChartStore } from "../stores/orgChartStore";
+import { showToast } from "../utils/toast";
 
 export const useOrgChart = ({
   handleEmployeeDragStart,
   handleEmployeeDrop,
   handleDepartmentEmployeeDrop,
-  showToast,
 }: Omit<UseOrgChartParams, 'newDepartment'>) => {
   const {
     nodes,

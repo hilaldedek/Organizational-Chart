@@ -20,8 +20,6 @@ export const DepartmentNodeComponent: React.FC<{
 
   const { nodes } = useOrgChartStore();
 
-  console.log("DepartmentNodeComponent render edildi:", data);
-
   // Bu departmandaki çalışanları nodes'tan al
   const departmentEmployees = useMemo(() => {
     return nodes.filter(
@@ -32,13 +30,6 @@ export const DepartmentNodeComponent: React.FC<{
 
   // Departmanda çalışan var mı kontrolü
   const departmentHasEmployees = useMemo(() => {
-    console.log(
-      "DepartmentGroupNodeComponent - departmentHasEmployees check:",
-      "unit_id:",
-      data.unit_id,
-      "employees count:",
-      departmentEmployees.length
-    );
     return departmentEmployees.length > 0;
   }, [departmentEmployees.length, data.unit_id]);
 
