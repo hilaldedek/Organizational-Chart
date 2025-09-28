@@ -48,7 +48,6 @@ export interface UseOrgChartParams {
   handleEmployeeDragStart: (sourceNodeId: string) => void;
   handleEmployeeDrop: (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
   handleDepartmentEmployeeDrop: (departmentId: string, employee: Employee, position: { x: number; y: number }) => void;
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
 }
 
 export interface UseOrgChartReturn {
@@ -73,9 +72,6 @@ export interface UseOrgChartReturn {
   onEdgesChange: (changes: EdgeChange[]) => void;
   onDragOver: (event: DragEvent) => void;
   
-  // Utility functions
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
-  
   // Handler functions for drag and drop
   handleEmployeeDragStart: (sourceNodeId: string) => void;
   handleDepartmentEmployeeDrop: (
@@ -97,29 +93,23 @@ export interface DragHooksParams {
   setEdges: React.Dispatch<React.SetStateAction<any[]>>;
   processedRequests: Set<string>;
   updatingEmployees: Set<string>;
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
   findAllSubordinatesFromNodes: (managerId: string, allNodes: Node[]) => Node[];
   areInSameDepartmentNodes: (sourceNode: Node, targetNode: Node) => boolean;
 }
 
 export interface OrgChartInnerProps {
   newDepartment: Department[];
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
+  onEmployeeAssigned?: (employeeId: string) => void;
 }
 
-export interface UseEmployeeUpdateParams {
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
-}
 
 export interface UseOrgChartParams {
   handleEmployeeDragStart: (sourceNodeId: string) => void;
   handleEmployeeDrop: (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => void;
   handleDepartmentEmployeeDrop: (departmentId: string, employee: Employee, position: { x: number; y: number }) => void;
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
 }
 
 export interface UseDragAndDropsParams {
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
   findAllSubordinatesFromNodes: (nodeId: string, nodes: Node[]) => Node[];
   areInSameDepartmentNodes: (sourceNode: Node, targetNode: Node) => boolean;
 }

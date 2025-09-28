@@ -1,18 +1,14 @@
 // src/app/hooks/useDragAndDrops.ts
 import { useCallback } from "react";
 import { Node } from "@xyflow/react";
-import { Employee } from "../types/orgChart";
+import { Employee, UseDragAndDropsParams } from "../types/orgChart";
 import { useEmployeeUpdate } from "./useEmployeeUpdate";
 import { useOrgChartStore } from "../stores/orgChartStore";
+import { showToast } from "../utils/toast";
 
-interface UseDragAndDropsParams {
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
-  findAllSubordinatesFromNodes: (nodeId: string, nodes: Node[]) => Node[];
-  areInSameDepartmentNodes: (sourceNode: Node, targetNode: Node) => boolean;
-}
+
 
 export const useDragAndDrops = ({
-  showToast,
   findAllSubordinatesFromNodes,
   areInSameDepartmentNodes,
 }: UseDragAndDropsParams) => {
@@ -27,7 +23,7 @@ export const useDragAndDrops = ({
     setNodes,
   } = useOrgChartStore();
   
-  const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate } = useEmployeeUpdate({ showToast });
+  const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate } = useEmployeeUpdate();
 
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
@@ -105,19 +101,20 @@ const result = await handleIntraDepartmentManagerUpdate({
         // Dairesel hiyerarşi kontrolü
         const allSubordinates = findAllSubordinatesFromNodes(draggedNodeId, currentNodes);
         if (allSubordinates.some((sub) => sub.id === targetNodeId)) {
-          showToast("warning", "Dairesel hiyerarşi oluşturulamaz!");
+          showToast("warn", "Dairesel hiyerarşi oluşturulamaz!");
           return;
         }
 
         // Kendisine taşıma kontrolü
         if (draggedNodeId === targetNodeId) {
-          showToast("warning", "Personel kendisine rapor veremez!");
+          showToast("warn", "Personel kendisine rapor veremez!");
           return;
         }
 
       
       }
       if (!existingNode) {
+        
         const { nodes: currentNodes } = useOrgChartStore.getState();
         const targetNode = currentNodes.find((n) => n.id === targetNodeId);
         const departmentId = targetNode?.parentId?.toString();
@@ -127,6 +124,7 @@ const result = await handleIntraDepartmentManagerUpdate({
         }
       
         (async () => {
+          
           // 1) API: yeni personeli hedef departmana ve targetNode'u manager olacak şekilde ekle
           const result = await handleAddEmployeeToDepartment({
             person_id: draggedEmployee.person_id.toString(),
@@ -162,14 +160,13 @@ const result = await handleIntraDepartmentManagerUpdate({
       
           // 3) Edge: targetNode yönetici olacak şekilde bağla
           updateEdgesForEmployee(newNode.id, targetNodeId);
-      
           showToast("success", "Personel eklendi ve bağlandı.");
         })();
       
         return;
       }
       // Sidebar’dan yeni personel ekleme devre dışı
-      showToast("warning", "Yeni personel ekleme şu anda desteklenmiyor.");
+      showToast("warn", "Yeni personel ekleme şu anda desteklenmiyor.");
     },
     [
       nodes, 

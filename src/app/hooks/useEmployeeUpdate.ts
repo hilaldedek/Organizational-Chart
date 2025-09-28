@@ -2,12 +2,9 @@
 import { useCallback } from "react";
 import { UpdateEmployeeParams } from "../types/orgChart";
 import { useOrgChartStore } from "../stores/orgChartStore";
+import { showToast } from "../utils/toast";
 
-interface UseEmployeeUpdateParams {
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
-}
-
-export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
+export const useEmployeeUpdate = () => {
   const { 
     addUpdatingEmployee, 
     removeUpdatingEmployee, 
@@ -21,7 +18,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
   const handleIntraDepartmentManagerUpdate = useCallback(
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
       if (updatingEmployees.has(person_id)) {
-        showToast("warning", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
+        showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
         return { success: false };
       }
 
@@ -75,7 +72,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
       console.log("handleAddEmployeeToDepartment tetiklendi!", { person_id, drop_department_id, drop_employee_id });
       if (updatingEmployees.has(person_id)) {
-        showToast("warning", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
+        showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
         return { success: false };
       }
 
@@ -144,7 +141,7 @@ export const useEmployeeUpdate = ({ showToast }: UseEmployeeUpdateParams) => {
       drop_employee_id: string; 
     }) => {
       if (updatingEmployees.has(person_id)) {
-        showToast("warning", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
+        showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
         return { success: false };
       }
 

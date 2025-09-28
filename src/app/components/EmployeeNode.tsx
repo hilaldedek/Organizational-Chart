@@ -7,6 +7,7 @@ import { Employee } from "../types/orgChart";
 import { getNodeStyle, handleStyle } from "../utils/orgChartHelpers";
 import { useOrgChartStore } from "../stores/orgChartStore";
 import { FaDeleteLeft } from "react-icons/fa6";
+import { showToast } from "../utils/toast";
 
 const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
   data,
@@ -91,9 +92,11 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
         }),
       });
       if (!res.ok) {
+        showToast("error", "Atanmış çalışan departmandan silinemedi.");
         console.error("Silme başarısız:", await res.text());
         return;
       }
+      showToast("success", "Atanmış personel departmandan kaldırıldı.");
       const payload = await res.json();
       const ids: string[] = payload.updatedPersonIds || [data.person_id];
 

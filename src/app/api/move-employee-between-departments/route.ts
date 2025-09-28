@@ -39,7 +39,7 @@ export async function PUT(req: Request) {
         { status: 400 }
       );
     }
-
+console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DEPARTMENT_ID: ",new_department_id);
     await client.query("BEGIN");
 
     // Employee'nin mevcut departmanını ve parent connection'ını al
@@ -93,6 +93,7 @@ export async function PUT(req: Request) {
       [drop_employee_id]
     );
     const targetParentsConnection = targetEmployeeParentsConnection.rows[0].parents_connection;
+    console.log("DROP EMPLOYEE ID: ",drop_employee_id)
     await client.query(
       "UPDATE employee SET manager_id = $1 WHERE person_id = $2",
       [drop_employee_id, person_id]
@@ -139,9 +140,9 @@ export async function PUT(req: Request) {
     );
 
     const checkNewManager = await client.query(
-      `SELECT CASE WHEN department_id IS NULL THEN 0 ELSE 1 END AS is_assigned
+      `SELECT CASE WHEN manager_id IS NULL THEN 0 ELSE 1 END AS is_assigned
        FROM department
-       WHERE department_id = $1`,
+       WHERE unit_id = $1`,
       [new_department_id]
     );
     

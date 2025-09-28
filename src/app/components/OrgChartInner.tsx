@@ -13,14 +13,10 @@ import { useOrgChartStore } from "../stores/orgChartStore";
 import EmployeeNode from "./EmployeeNode";
 import { DepartmentNodeComponent } from "./DepartmentNode";
 import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
-
-interface OrgChartInnerProps {
-  showToast: (type: "success" | "error" | "warning", message: string) => void;
-  onEmployeeAssigned?: (employeeId: string) => void;
-}
+import { OrgChartInnerProps } from "../types/orgChart";
+import { showToast } from "../utils/toast";   // ✅ direkt buradan import
 
 const OrgChartInner: React.FC<OrgChartInnerProps> = ({
-  showToast,
   onEmployeeAssigned,
 }) => {
   const {
@@ -33,7 +29,6 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     applyHierarchicalLayout,
   } = useOrgChartStore();
 
-  // Utility functions
   const findAllSubordinatesFromNodes = useCallback(
     (nodeId: string, nodes: Node[]): Node[] => {
       const result: Node[] = [];
@@ -70,16 +65,15 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     []
   );
 
-  // Drag handlers
   const { handleEmployeeDragStart, handleEmployeeDrop } = useDragAndDrops({
-    showToast,
     findAllSubordinatesFromNodes,
     areInSameDepartmentNodes,
   });
+
   const {
     handleAddEmployeeToDepartment,
     handleMoveEmployeeBetweenDepartments,
-  } = useEmployeeUpdate({ showToast });
+  } = useEmployeeUpdate();
 
   const handleDepartmentEmployeeDrop = useCallback(
     (
@@ -93,53 +87,33 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
         position,
       });
 
-      // Eğer employee zaten bir departmanda ise (departmanlar arası taşıma)
       const existingEmployeeNode = nodes.find(
         (node) =>
           node.type === "employee" && node.id === employee.person_id.toString()
       );
 
-      console.log("Employee node kontrolü:", {
-        employeeId: employee.person_id.toString(),
-        existingEmployeeNode: !!existingEmployeeNode,
-        currentParentId: existingEmployeeNode?.parentId,
-        targetDepartmentId: departmentId,
-      });
-
       if (existingEmployeeNode) {
-        // Departmanlar arası taşıma - mevcut node'u ve children'larını güncelle
         (async () => {
-          // Hedef departmandaki mevcut employee'yi bul (drop target)
           const targetDepartmentEmployees = nodes.filter(
             (node) => node.type === "employee" && node.parentId === departmentId
           );
 
-          // Eğer hedef departmanda employee yoksa, taşınan employee'yi manager yap
           const dropEmployeeId =
             targetDepartmentEmployees.length > 0
               ? targetDepartmentEmployees[0].id
               : employee.person_id.toString();
 
-          console.log("Departmanlar arası taşıma başlıyor:", {
-            person_id: employee.person_id.toString(),
-            new_department_id: departmentId,
-            drop_employee_id: dropEmployeeId,
-          });
-console.log("GELDİM Mİ")
           const result = await handleMoveEmployeeBetweenDepartments({
             person_id: employee.person_id.toString(),
             new_department_id: departmentId,
             drop_employee_id: dropEmployeeId,
           });
 
-          console.log("API sonucu:", result);
           if (!result.success) return;
 
-          // Taşınan employee'nin children'larını bul
           const { nodes: currentNodes } = useOrgChartStore.getState();
           const movedEmployeeIds = [employee.person_id.toString()];
 
-          // Children'ları bul (parents_connection'a göre)
           const childrenNodes = currentNodes.filter((node) => {
             if (
               node.type !== "employee" ||
@@ -154,7 +128,6 @@ console.log("GELDİM Mİ")
 
           childrenNodes.forEach((child) => movedEmployeeIds.push(child.id));
 
-          // Taşınan tüm node'ları yeni departmana güncelle
           setNodes((prev) =>
             prev.map((node) => {
               if (movedEmployeeIds.includes(node.id)) {
@@ -162,7 +135,7 @@ console.log("GELDİM Mİ")
                   ...node,
                   parentId: departmentId,
                   position: {
-                    x: position.x + (Math.random() - 0.5) * 100, // Küçük rastgele offset
+                    x: position.x + (Math.random() - 0.5) * 100,
                     y: position.y + (Math.random() - 0.5) * 100,
                   },
                 };
@@ -171,25 +144,22 @@ console.log("GELDİM Mİ")
             })
           );
 
-          // Eski edge'leri temizle (taşınan employee'lerle ilgili tüm edge'ler)
           setEdges((prev) =>
             prev.filter((edge) => {
               const sourceMoved = movedEmployeeIds.includes(edge.source);
               const targetMoved = movedEmployeeIds.includes(edge.target);
-              // Eğer edge'in kaynağı veya hedefi taşınan employee'lerden biri ise sil
               return !sourceMoved && !targetMoved;
             })
           );
         })();
       } else {
-        // İlk atama - yeni node oluştur
         const departmentEmployees = nodes.filter(
           (node) => node.type === "employee" && node.parentId === departmentId
         );
 
         if (departmentEmployees.length > 0) {
           showToast(
-            "warning",
+            "warn",
             "Bu departmanda zaten personel var! Yeni personelleri mevcut personellerin üstüne sürükleyin."
           );
           return;
@@ -229,7 +199,6 @@ console.log("GELDİM Mİ")
             expandParent: true,
           };
           setNodes((prev) => [...prev, newNode]);
-          // Atama başarılıysa callback'i çağır
           if (onEmployeeAssigned) {
             onEmployeeAssigned(employee.person_id.toString());
           }
@@ -238,7 +207,6 @@ console.log("GELDİM Mİ")
     },
     [
       nodes,
-      showToast,
       handleAddEmployeeToDepartment,
       handleMoveEmployeeBetweenDepartments,
       onEmployeeAssigned,
@@ -247,34 +215,27 @@ console.log("GELDİM Mİ")
     ]
   );
 
-  // Store'a department drop handler'ını kaydet
   useEffect(() => {
     useOrgChartStore
       .getState()
       .setDepartmentDropHandler?.(handleDepartmentEmployeeDrop);
   }, [handleDepartmentEmployeeDrop]);
 
-  // useOrgChart hook'u - sadece gerekli handler'ları geçiyoruz
   useOrgChart({
     handleEmployeeDragStart,
     handleEmployeeDrop,
     handleDepartmentEmployeeDrop,
-    showToast,
   });
 
-  // Otomatik düzen uygula - nodes yüklendiğinde
   useEffect(() => {
     if (nodes.length > 0 && edges.length > 0) {
-      // Kısa bir gecikme ile düzen uygula (DOM güncellemeleri için)
       const timer = setTimeout(() => {
         applyHierarchicalLayout();
       }, 500);
-
       return () => clearTimeout(timer);
     }
   }, [nodes.length, edges.length, applyHierarchicalLayout]);
 
-  // Node types
   const nodeTypes = useMemo(
     () => ({
       employee: EmployeeNode,
@@ -283,14 +244,12 @@ console.log("GELDİM Mİ")
     []
   );
 
-  // Drag over handler
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   }, []);
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // Canvas'a drop edilen itemleri handle et
     try {
       const dropData = JSON.parse(e.dataTransfer.getData("application/json"));
       console.log("Canvas'a drop edildi:", dropData);
@@ -313,7 +272,6 @@ console.log("GELDİM Mİ")
         connectionLineStyle={{
           stroke: "#555",
           strokeWidth: 2,
-          strokeDasharray: undefined,
         }}
         connectionLineType={ConnectionLineType.SmoothStep}
       >
