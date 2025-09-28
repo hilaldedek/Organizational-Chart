@@ -12,6 +12,7 @@ export const useEmployeeUpdate = () => {
     nodes,
     setAllEmployees,
     removeUnassignedEmployee, // Store'dan yeni eklenen fonksiyonu al
+    setNodes, // Nodes güncelleme için eklendi
   } = useOrgChartStore();
 
   // Departman içi manager güncelleme (sadece manager_id değişir)
@@ -54,7 +55,7 @@ export const useEmployeeUpdate = () => {
         // Başarılı olursa personeli atanmamış listesinden kaldır
         removeUnassignedEmployee(person_id);
         showToast("success", "Departman içi yönetici güncellemesi başarılı.");
-        return { success: true };
+        return { success: true, employee: data.employee };
       } catch (error) {
         console.error("API hatası:", error);
         const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
@@ -92,16 +93,34 @@ export const useEmployeeUpdate = () => {
         });
 
         const data = await response.json();
-        
-        if (!response.ok) {
+        console.log("DATA: ",data);
+        if(response.ok){
+          setNodes((prev) => prev.map((node) => {
+            if (node.id === person_id && node.type === "employee") {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...data.employee,
+                  isManager: node.data.isManager,
+                  onDragStart: node.data.onDragStart,
+                  onDrop: node.data.onDrop,
+                  isDragTarget: node.data.isDragTarget,
+                  isBeingDragged: node.data.isBeingDragged,
+                }
+              };
+            }
+            return node;
+          }));
+          console.log("NODES: ",nodes)
+          removeUnassignedEmployee(person_id);
+        showToast("success", "Personel departmana başarıyla eklendi.");
+        return { success: true, employee: data.employee };
+        }else{
           const errorMessage = data.message || `HTTP ${response.status}: ${response.statusText}`;
           showToast("error", `Hata: ${errorMessage}`);
           return { success: false };
         }
-        
-        removeUnassignedEmployee(person_id);
-        showToast("success", "Personel departmana başarıyla eklendi.");
-        return { success: true };
       } catch (error) {
         console.error("API hatası:", error);
         const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
@@ -111,7 +130,7 @@ export const useEmployeeUpdate = () => {
         removeUpdatingEmployee(person_id);
       }
     },
-    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee]
+    [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee, setNodes]
   );
 
   // Hangi API'yi kullanacağını belirleyen ana fonksiyon
@@ -138,7 +157,7 @@ export const useEmployeeUpdate = () => {
     }: { 
       person_id: string; 
       new_department_id: string; 
-      drop_employee_id: string; 
+      drop_employee_id?: string; // Optional yapıldı
     }) => {
       if (updatingEmployees.has(person_id)) {
         showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
@@ -154,16 +173,22 @@ export const useEmployeeUpdate = () => {
           drop_employee_id
         });
         
+        // drop_employee_id varsa body'ye ekle, yoksa ekleme
+        const requestBody: any = {
+          person_id, 
+          new_department_id
+        };
+        
+        if (drop_employee_id) {
+          requestBody.drop_employee_id = drop_employee_id;
+        }
+        
         const response = await fetch("/api/move-employee-between-departments", {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ 
-            person_id, 
-            new_department_id,
-            drop_employee_id
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         const data = await response.json();

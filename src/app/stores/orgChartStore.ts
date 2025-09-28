@@ -130,17 +130,26 @@ export const useOrgChartStore = create<OrgChartState>()(
         return { updatingEmployees: newSet };
       }),
       
-      updateEmployeeInNodes: (sourceNodeId, targetNodeId) => set((state) => ({
-        nodes: state.nodes.map((node) => {
-          if (node.id === sourceNodeId && node.type === "employee") {
-            return {
-              ...node,
-              data: { ...node.data, manager_id: parseInt(targetNodeId) },
-            };
-          }
-          return node;
-        })
-      })),
+      updateEmployeeInNodes: (sourceNodeId, targetNodeId) => set((state) => {
+        const targetNode = state.nodes.find(n => n.id === targetNodeId);
+        const departmentId = targetNode?.parentId ? parseInt(targetNode.parentId) : null;
+        
+        return {
+          nodes: state.nodes.map((node) => {
+            if (node.id === sourceNodeId && node.type === "employee") {
+              return {
+                ...node,
+                data: { 
+                  ...node.data, 
+                  manager_id: parseInt(targetNodeId),
+                  department_id: departmentId || node.data.department_id
+                },
+              };
+            }
+            return node;
+          })
+        };
+      }),
       
       updateEdgesForEmployee: (sourceNodeId, targetNodeId) => set((state) => {
         const filteredEdges = state.edges.filter((edge) => edge.target !== sourceNodeId);

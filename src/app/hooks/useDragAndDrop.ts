@@ -54,8 +54,30 @@ const result = await handleIntraDepartmentManagerUpdate({
         });
 
         if(!result?.success){showToast("error","Güncelleme başarısız."); return;}
-        // Optimistic UI
-        updateEmployeeInNodes(sourceNodeId, targetNodeId);
+        
+        // API'den dönen güncel veri ile node'u güncelle
+        if (result.employee) {
+          setNodes((prev) => prev.map((node) => {
+            if (node.id === sourceNodeId && node.type === "employee") {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...result.employee,
+                  isManager: node.data.isManager,
+                  onDragStart: node.data.onDragStart,
+                  onDrop: node.data.onDrop,
+                  isDragTarget: node.data.isDragTarget,
+                  isBeingDragged: node.data.isBeingDragged,
+                }
+              };
+            }
+            return node;
+          }));
+        } else {
+          // Fallback: Optimistic UI
+          updateEmployeeInNodes(sourceNodeId, targetNodeId);
+        }
         updateEdgesForEmployee(sourceNodeId, targetNodeId);
 
 
@@ -143,7 +165,13 @@ const result = await handleIntraDepartmentManagerUpdate({
           });
           if (!result.success) return;
       
-          // 2) UI: yeni node'u aynı departmanda oluştur
+          // 2) UI: yeni node'u aynı departmanda oluştur - API'den dönen güncel veri ile
+          const updatedEmployee = result.employee || {
+            ...draggedEmployee,
+            department_id: parseInt(departmentId), // API'den güncellenmiş department_id
+            manager_id: parseInt(targetNodeId), // API'den güncellenmiş manager_id
+          };
+          
           const newNode: Node = {
             id: draggedEmployee.person_id.toString(),
             type: "employee",
@@ -152,7 +180,7 @@ const result = await handleIntraDepartmentManagerUpdate({
               y: (targetNode?.position.y ?? 80) + 100, // hedefin altına yerleştir
             },
             data: {
-              ...draggedEmployee,
+              ...updatedEmployee,
               person_id: draggedEmployee.person_id,
               isManager: false,
               onDragStart: handleEmployeeDragStart,

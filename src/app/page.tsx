@@ -4,17 +4,14 @@ import { Department, Employee } from "./types/orgChart";
 import { ReactFlowProvider } from "@xyflow/react";
 import OrgChart from "./components/OrgChart";
 import Sidebar from "./components/Sidebar";
+import { useOrgChartStore } from "./stores/orgChartStore";
 
 export default function HomePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]); // employee list
+  const { nodes } = useOrgChartStore();
 
-  const showToast = (
-    type: "success" | "error" | "warning",
-    message: string
-  ) => {
-    console.log(type, message);
-  };
+  console.log("PAGE:TSX'DEN NODES: ", nodes);
 
   const handleAssignEmployee = (employeeId: string) => {
     console.log("Assigned employee:", employeeId);
@@ -23,7 +20,7 @@ export default function HomePage() {
   return (
     <div className="flex w-full h-screen relative font-(family-name:--font-poppins)">
       <ReactFlowProvider>
-        <OrgChart newDepartment={[]} showToast={showToast} />
+        <OrgChart newDepartment={departments} />
         <Sidebar employees={employees} onAssign={handleAssignEmployee} />
       </ReactFlowProvider>
     </div>

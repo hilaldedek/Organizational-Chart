@@ -75,8 +75,17 @@ export async function PUT(req: Request) {
     );
     }
 
+    // Güncellenmiş employee verisini al
+    const updatedEmployeeQuery = await client.query(
+      "SELECT * FROM employee WHERE person_id = $1",
+      [person_id]
+    );
+    
     await client.query("COMMIT");
-    return NextResponse.json({ message: "Personel departmana başarıyla eklendi." });
+    return NextResponse.json({ 
+      message: "Personel departmana başarıyla eklendi.",
+      employee: updatedEmployeeQuery.rows[0]
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Veritabanı hatası:", err);

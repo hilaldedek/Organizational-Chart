@@ -32,10 +32,10 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { person_id, new_department_id ,drop_employee_id} = parsedData;
-    if (!person_id || !new_department_id ||!drop_employee_id) {
+    const { person_id, new_department_id, drop_employee_id } = parsedData;
+    if (!person_id || !new_department_id) {
       return NextResponse.json(
-        { error: "Eksik parametre. 'person_id', 'new_department_id' ve 'drop_department_id' gereklidir." },
+        { error: "Eksik parametre. 'person_id' ve 'new_department_id' gereklidir." },
         { status: 400 }
       );
     }
@@ -87,18 +87,33 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
       [person_id]
     );
     const sourceParentsConnection = sourceEmployeeParentsConnection.rows[0].parents_connection;
-    //sürüklenilenin (hedef) parentları
-    const targetEmployeeParentsConnection=await client.query(
-      "SELECT parents_connection FROM employee WHERE person_id = $1",
-      [drop_employee_id]
-    );
-    const targetParentsConnection = targetEmployeeParentsConnection.rows[0].parents_connection;
-    console.log("DROP EMPLOYEE ID: ",drop_employee_id)
+    
+    let newManagerId: string;
+    let newTargetEmployeeParentsConnection: string;
+    
+    if (drop_employee_id) {
+      // Hedef departmanda personel varsa, o personeli manager yap
+      const targetEmployeeParentsConnection=await client.query(
+        "SELECT parents_connection FROM employee WHERE person_id = $1",
+        [drop_employee_id]
+      );
+      const targetParentsConnection = targetEmployeeParentsConnection.rows[0].parents_connection;
+      console.log("DROP EMPLOYEE ID: ",drop_employee_id)
+      
+      newManagerId = drop_employee_id;
+      newTargetEmployeeParentsConnection = targetParentsConnection + ">" + person_id;
+    } else {
+      // Hedef departmanda personel yoksa, CEO'ya bağla
+      const ceoResult = await client.query("SELECT person_id FROM employee WHERE role = 'CEO'");
+      const ceoId = ceoResult.rows[0]?.person_id;
+      newManagerId = ceoId;
+      newTargetEmployeeParentsConnection = ceoId + ">" + person_id;
+    }
+    
     await client.query(
       "UPDATE employee SET manager_id = $1 WHERE person_id = $2",
-      [drop_employee_id, person_id]
+      [newManagerId, person_id]
     );
-    const newTargetEmployeeParentsConnection=targetParentsConnection+">"+person_id;
     // Employee ve tüm children'larını yeni departmana taşı
     const result = await client.query(
       `WITH updated AS (

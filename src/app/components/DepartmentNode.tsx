@@ -9,6 +9,8 @@ import { NodeResizer } from "@xyflow/react";
 import { getContainerStyle, headerStyle } from "../utils/orgChartHelpers";
 import { FcHighPriority, FcOk } from "react-icons/fc";
 import { useOrgChartStore } from "../stores/orgChartStore";
+import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
+import { showToast } from "../utils/toast";
 
 export const DepartmentNodeComponent: React.FC<{
   data: DepartmentNodeData;
@@ -18,7 +20,127 @@ export const DepartmentNodeComponent: React.FC<{
   const [draggedEmployee, setDraggedEmployee] = useState<Employee | null>(null);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { nodes } = useOrgChartStore();
+  const { handleMoveEmployeeBetweenDepartments } = useEmployeeUpdate();
+
+  const { nodes, setNodes, updateEdgesForEmployee } = useOrgChartStore();
+
+  // Alt personelleri bulma fonksiyonu
+  const findAllSubordinatesFromNodes = useCallback(
+    (nodeId: string, allNodes: typeof nodes): typeof nodes => {
+      const result: typeof nodes = [];
+      const visited = new Set<string>();
+
+      const findSubordinates = (currentNodeId: string) => {
+        if (visited.has(currentNodeId)) return;
+        visited.add(currentNodeId);
+
+        const subordinates = allNodes.filter(
+          (node) =>
+            node.type === "employee" &&
+            node.data?.manager_id?.toString() === currentNodeId
+        );
+
+        subordinates.forEach((subordinate) => {
+          result.push(subordinate);
+          findSubordinates(subordinate.id);
+        });
+      };
+
+      findSubordinates(nodeId);
+      return result;
+    },
+    []
+  );
+
+  // Departmanlar arası taşıma fonksiyonu
+  const handleInterDepartmentMove = useCallback(
+    async (
+      sourceNodeId: string,
+      targetDepartmentId: string,
+      draggedEmployee: Employee
+    ) => {
+      try {
+        // Hedef departmanın manager'ını bul
+        const targetDepartmentEmployees = nodes.filter(
+          (node) =>
+            node.type === "employee" && node.parentId === targetDepartmentId
+        );
+
+        let targetManagerId: string | null = null;
+
+        if (targetDepartmentEmployees.length > 0) {
+          // Departmanda personel varsa ilk personeli manager olarak kullan
+          targetManagerId = targetDepartmentEmployees[0].id;
+        }
+        // Eğer departmanda personel yoksa targetManagerId null kalır
+
+        const result = await handleMoveEmployeeBetweenDepartments({
+          person_id: sourceNodeId,
+          new_department_id: targetDepartmentId,
+          drop_employee_id: targetManagerId || undefined, // null ise undefined gönder
+        });
+        console.log("RESULT: ", result);
+        if (!result?.success) {
+          showToast("error", "Departmanlar arası taşıma başarısız.");
+          return;
+        }
+
+        // Taşınan employee'ları yeni departmana taşı
+        const sourceNode = nodes.find((n) => n.id === sourceNodeId);
+        if (sourceNode) {
+          // Tüm alt personelleri bul
+          const allSubordinates = findAllSubordinatesFromNodes(
+            sourceNodeId,
+            nodes
+          );
+          const allMovedNodes = [sourceNode, ...allSubordinates];
+
+          // Tüm taşınan node'ları yeni departmana taşı
+          setNodes((prev) =>
+            prev.map((node) => {
+              if (allMovedNodes.some((movedNode) => movedNode.id === node.id)) {
+                return {
+                  ...node,
+                  parentId: targetDepartmentId,
+                  data: {
+                    ...node.data,
+                    department_id: parseInt(targetDepartmentId),
+                    manager_id:
+                      node.id === sourceNodeId && targetManagerId
+                        ? parseInt(targetManagerId)
+                        : node.data.manager_id,
+                  },
+                };
+              }
+              return node;
+            })
+          );
+        }
+
+        // Edge'leri güncelle (eğer targetManagerId varsa)
+        if (targetManagerId) {
+          updateEdgesForEmployee(sourceNodeId, targetManagerId);
+        }
+
+        showToast(
+          "success",
+          `Personel ve ${
+            result.movedEmployees || 1
+          } alt personeli yeni departmana taşındı.`
+        );
+      } catch (error) {
+        console.error("Departmanlar arası taşıma hatası:", error);
+        showToast("error", "Departmanlar arası taşıma sırasında hata oluştu.");
+      }
+    },
+    [
+      handleMoveEmployeeBetweenDepartments,
+      nodes,
+      setNodes,
+      updateEdgesForEmployee,
+      findAllSubordinatesFromNodes,
+    ]
+  );
 
   // Bu departmandaki çalışanları nodes'tan al
   const departmentEmployees = useMemo(() => {
@@ -117,6 +239,17 @@ export const DepartmentNodeComponent: React.FC<{
 
         const parsed = JSON.parse(dropData);
         console.log("Department drop data:", parsed);
+
+        if (parsed.type === "employee-node" && parsed.employee.department_id) {
+          console.log("DEPARTMENT NODE : DEPARTMANLAR ARASI YÖNETİCİ TAŞIMASI");
+          // Departmanlar arası taşıma işlemini başlat
+          handleInterDepartmentMove(
+            parsed.employee.person_id.toString(),
+            data.unit_id.toString(),
+            parsed.employee
+          );
+          return;
+        }
 
         // Sidebar'dan gelen employee'ler (ilk atama) veya departmanlar arası taşınan employee'ler
         if (

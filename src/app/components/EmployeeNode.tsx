@@ -16,7 +16,7 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
   const [hovered, setHovered] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { setNodes, setEdges, addUnassignedEmployees } = useOrgChartStore();
-
+//işaret
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
       const dragData: DragData = {
@@ -27,7 +27,7 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
       };
       e.dataTransfer.setData("application/json", JSON.stringify(dragData));
       data.onDragStart?.(data.person_id); // ✅ optional chaining
-      console.log("Dragging employee:", data.first_name, data.last_name);
+      console.log("Dragging employee:", data.first_name, data.last_name,data.department_id);
     },
     [data]
   );
