@@ -163,7 +163,6 @@ export const useOrgChart = ({
                 source: manager.manager_id.toString(),
                 target: manager.person_id.toString(),
                 type: "smoothstep",
-                animated: true,
                 style: { stroke: "#4caf50", strokeWidth: 2 , strokeDasharray: undefined},
                 labelStyle: { fontSize: 10 },
               });

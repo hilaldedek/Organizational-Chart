@@ -31,7 +31,7 @@ export const headerStyle: CSSProperties = {
 };
 
 export const getNodeStyle = (draggedOver: boolean, data: EmployeeNodeData): CSSProperties => ({
-  background: data.isManager ? "#FFEAEA" : "#f5f5f5",
+  background: "#f5f5f5",
   border: draggedOver ? "2px solid #4caf50" : "1px solid #ddd",
   borderRadius: "8px",
   padding: "10px",
