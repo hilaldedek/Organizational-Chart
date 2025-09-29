@@ -152,11 +152,13 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
     async ({ 
       person_id, 
       new_department_id, 
-      drop_employee_id 
+      drop_employee_id,
+      employees_to_move_count
     }: { 
       person_id: string; 
       new_department_id: string; 
       drop_employee_id?: string; // Optional yapıldı
+      employees_to_move_count?: number; // Taşınacak toplam employee sayısı
     }) => {
       if (updatingEmployees.has(person_id)) {
         showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
@@ -176,7 +178,8 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
         const requestBody: any = {
           person_id, 
           new_department_id,
-          drop_employee_id
+          drop_employee_id,
+          employees_to_move_count
         };
         
         // if (drop_employee_id) {

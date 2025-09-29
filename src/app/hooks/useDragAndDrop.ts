@@ -131,10 +131,15 @@ const result = await handleIntraDepartmentManagerUpdate({
         // }
         // Eğer departmanda personel yoksa targetManagerId null kalır
 console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepartmentId,"drop_employee_id: ",targetNodeId)
+        // Taşınacak personel sayısını hesapla (kendisi + tüm alt personelleri)
+        const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, currentNodes);
+        const employeesToMoveCount = 1 + allSubordinates.length; // Kendisi + alt personelleri
+
         const result = await handleMoveEmployeeBetweenDepartments({
           person_id: sourceNodeId,
           new_department_id: newDepartmentId,
           drop_employee_id: targetNodeId || undefined, // null ise undefined gönder
+          employees_to_move_count: employeesToMoveCount,
         });
 
         if(!result?.success){showToast("error","Departmanlar arası taşıma başarısız."); return;}
@@ -142,10 +147,20 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
         // Taşınan employee'ları yeni departmana taşı
         const sourceNode = currentNodes.find((n) => n.id === sourceNodeId);
         if (sourceNode) {
+          // Eski manager'ı bul ve edge'ini sil
+          const oldManagerId = sourceNode.data?.manager_id?.toString();
+          if (oldManagerId) {
+            const { setEdges } = useOrgChartStore.getState();
+            setEdges((prev) => prev.filter(edge => 
+              !(edge.source === oldManagerId && edge.target === sourceNodeId)
+            ));
+          }
+
           // Tüm alt personelleri bul
           const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, currentNodes);
+          console.log("ALL SUBORDINATES -useDragAndDrop-handleInterDepartmentMove: ",allSubordinates);
           const allMovedNodes = [sourceNode, ...allSubordinates];
-          
+          console.log("ALL MOVED NODES -useDragAndDrop-handleInterDepartmentMove: ",allMovedNodes);
           // Tüm taşınan node'ları yeni departmana taşı
           setNodes((prev) => prev.map((node) => {
             if (allMovedNodes.some(movedNode => movedNode.id === node.id)) {

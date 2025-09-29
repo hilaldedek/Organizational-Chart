@@ -32,7 +32,7 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { person_id, new_department_id, drop_employee_id } = parsedData;
+    const { person_id, new_department_id, drop_employee_id, employees_to_move_count } = parsedData;
     if (!person_id || !new_department_id) {
       return NextResponse.json(
         { error: "Eksik parametre. 'person_id' ve 'new_department_id' gereklidir." },
@@ -59,7 +59,6 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
     const currentDepartmentId = employeeResult.rows[0].department_id;
     const parentsConnection = employeeResult.rows[0].parents_connection;
 
-    // Aynı departmana taşınıyorsa hata döndür
     if (currentDepartmentId === new_department_id) {
       await client.query("ROLLBACK");
       return NextResponse.json(
@@ -68,9 +67,8 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
       );
     }
 
-    // Yeni departmanın var olduğunu kontrol et
     const deptResult = await client.query(
-      "SELECT unit_id FROM department WHERE unit_id = $1",
+      "SELECT unit_id, max_employees, employee_count FROM department WHERE unit_id = $1",
       [new_department_id]
     );
 
@@ -79,6 +77,28 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
       return NextResponse.json(
         { error: `Belirtilen 'new_department_id' (${new_department_id}) için department kaydı bulunamadı.` },
         { status: 404 }
+      );
+    }
+
+    const targetDepartment = deptResult.rows[0];
+    const maxEmployee = targetDepartment.max_employees;
+    const currentEmployeeCount = targetDepartment.employee_count;
+  
+    console.log("Hedef departman bilgileri:", {
+      maxEmployee,
+      currentEmployeeCount,
+      employees_to_move_count
+    });
+    
+    const totalEmployeeCount = currentEmployeeCount + (employees_to_move_count || 0);
+  
+    if (employees_to_move_count && maxEmployee && totalEmployeeCount > maxEmployee) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { 
+          error: `Bu taşıma departmanın maximum çalışan değerini aşıyor. Mevcut çalışan sayısı: ${currentEmployeeCount}, Taşınacak çalışan sayısı: ${employees_to_move_count}, Toplam: ${totalEmployeeCount}, Maksimum izin verilen: ${maxEmployee}` 
+        },
+        { status: 400 }
       );
     }
     //sürüklediğimiz employee parentları

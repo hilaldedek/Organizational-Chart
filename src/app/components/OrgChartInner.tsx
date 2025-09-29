@@ -14,7 +14,7 @@ import EmployeeNode from "./EmployeeNode";
 import { DepartmentNodeComponent } from "./DepartmentNode";
 import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 import { OrgChartInnerProps } from "../types/orgChart";
-import { showToast } from "../utils/toast";   // ✅ direkt buradan import
+import { showToast } from "../utils/toast";
 
 const OrgChartInner: React.FC<OrgChartInnerProps> = ({
   onEmployeeAssigned,
