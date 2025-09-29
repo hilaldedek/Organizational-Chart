@@ -9,7 +9,6 @@ import { showToast } from "../utils/toast";
 
 
 export const useDragAndDrops = ({
-  findAllSubordinatesFromNodes,
   areInSameDepartmentNodes,
 }: UseDragAndDropsParams) => {
   const {
@@ -39,6 +38,7 @@ const departmentId= targetNode.parentId?.toString();
 if(!departmentId){
   showToast("error","Hedef departman bulunamadı."); return;
 }
+
 
       const requestId = `intra-dept-${sourceNodeId}-${targetNodeId}`;
       
@@ -131,18 +131,19 @@ const result = await handleIntraDepartmentManagerUpdate({
         // }
         // Eğer departmanda personel yoksa targetManagerId null kalır
 console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepartmentId,"drop_employee_id: ",targetNodeId)
-        // Taşınacak personel sayısını hesapla (kendisi + tüm alt personelleri)
-        const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, currentNodes);
-        const employeesToMoveCount = 1 + allSubordinates.length; // Kendisi + alt personelleri
+
 
         const result = await handleMoveEmployeeBetweenDepartments({
           person_id: sourceNodeId,
           new_department_id: newDepartmentId,
           drop_employee_id: targetNodeId || undefined, // null ise undefined gönder
-          employees_to_move_count: employeesToMoveCount,
         });
 
         if(!result?.success){showToast("error","Departmanlar arası taşıma başarısız."); return;}
+        
+        // API'den gelen taşınan personel ID'lerini kullan
+        const movedEmployeeIds = result.movedEmployeeIds || [sourceNodeId];
+        console.log("Moved employee IDs from API:", movedEmployeeIds);
         
         // Taşınan employee'ları yeni departmana taşı
         const sourceNode = currentNodes.find((n) => n.id === sourceNodeId);
@@ -156,28 +157,24 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
             ));
           }
 
-          // Tüm alt personelleri bul
-          const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, currentNodes);
-          console.log("ALL SUBORDINATES -useDragAndDrop-handleInterDepartmentMove: ",allSubordinates);
-          const allMovedNodes = [sourceNode, ...allSubordinates];
-          console.log("ALL MOVED NODES -useDragAndDrop-handleInterDepartmentMove: ",allMovedNodes);
-          // Tüm taşınan node'ları yeni departmana taşı
-          setNodes((prev) => prev.map((node) => {
-            if (allMovedNodes.some(movedNode => movedNode.id === node.id)) {
-              return {
-                ...node,
-                parentId: newDepartmentId,
-                data: {
-                  ...node.data,
-                  department_id: parseInt(newDepartmentId),
-                  manager_id: node.id === sourceNodeId && targetNodeId
-                    ? parseInt(targetNodeId)
-                    : node.data.manager_id,
-                }
-              };
-            }
-            return node;
-          }));
+        // API'den gelen ID'lere göre node'ları güncelle
+        console.log("Moved employee IDs from API (useDragAndDrop):", movedEmployeeIds);
+        setNodes((prev) => prev.map((node) => {
+          if (movedEmployeeIds.includes(node.id)) {
+            return {
+              ...node,
+              parentId: newDepartmentId,
+              data: {
+                ...node.data,
+                department_id: newDepartmentId,
+                manager_id: node.id === sourceNodeId && targetNodeId
+                  ? targetNodeId
+                  : node.data.manager_id,
+              }
+            };
+          }
+          return node;
+        }));
         }
         
         // Edge'leri güncelle (eğer targetManagerId varsa)
@@ -201,7 +198,6 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
       addProcessedRequest,
       removeProcessedRequest,
       showToast,
-      findAllSubordinatesFromNodes
     ]
   );
 
@@ -229,12 +225,24 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
           return;
         }
 
-        // Dairesel hiyerarşi kontrolü
-        const allSubordinates = findAllSubordinatesFromNodes(draggedNodeId, currentNodes);
-        if (allSubordinates.some((sub) => sub.id === targetNodeId)) {
-          showToast("warn", "Dairesel hiyerarşi oluşturulamaz!");
-          return;
-        }
+        // Dairesel hiyerarşi kontrolü - basit kontrol
+        const isCircular = (sourceId: string, targetId: string, nodes: Node[]): boolean => {
+          const visited = new Set<string>();
+          const checkSubordinates = (currentId: string): boolean => {
+            if (visited.has(currentId)) return false;
+            if (currentId === targetId) return true;
+            visited.add(currentId);
+            
+            const subordinates = nodes.filter(node => 
+              node.type === "employee" && 
+              node.data?.manager_id?.toString() === currentId
+            );
+            
+            return subordinates.some(sub => checkSubordinates(sub.id));
+          };
+          
+          return checkSubordinates(sourceId);
+        };
 
         // Kendisine taşıma kontrolü
         if (draggedNodeId === targetNodeId) {
@@ -248,6 +256,11 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
         
         } else {
           console.log("DEPARTMAN İÇİ TAŞIMA")
+          // Sadece aynı departman içindeki taşımalarda dairesel hiyerarşi kontrolü
+          if (isCircular(draggedNodeId, targetNodeId, currentNodes)) {
+            showToast("warn", "Dairesel hiyerarşi oluşturulamaz!");
+            return;
+          }
           handleIntraDepartmentMove(draggedNodeId, targetNodeId, draggedEmployee);
         }
       } else {
@@ -273,8 +286,8 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
           // 2) UI: yeni node'u aynı departmanda oluştur - API'den dönen güncel veri ile
           const updatedEmployee = result.employee || {
             ...draggedEmployee,
-            department_id: parseInt(departmentId), // API'den güncellenmiş department_id
-            manager_id: parseInt(targetNodeId), // API'den güncellenmiş manager_id
+            department_id: departmentId, // String olarak tut
+            manager_id: targetNodeId, // String olarak tut
           };
           
           const newNode: Node = {
@@ -310,7 +323,7 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
     [
       nodes, 
       handleIntraDepartmentMove,
-      findAllSubordinatesFromNodes, 
+, 
       areInSameDepartmentNodes, 
       showToast,
       handleAddEmployeeToDepartment,
@@ -321,10 +334,23 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
 
   const checkCircularHierarchy = useCallback(
     (sourceNodeId: string, targetNodeId: string): boolean => {
-      const allSubordinates = findAllSubordinatesFromNodes(sourceNodeId, nodes);
-      return allSubordinates.some((sub) => sub.id === targetNodeId);
+      const visited = new Set<string>();
+      const checkSubordinates = (currentId: string): boolean => {
+        if (visited.has(currentId)) return false;
+        if (currentId === targetNodeId) return true;
+        visited.add(currentId);
+        
+        const subordinates = nodes.filter(node => 
+          node.type === "employee" && 
+          node.data?.manager_id?.toString() === currentId
+        );
+        
+        return subordinates.some(sub => checkSubordinates(sub.id));
+      };
+      
+      return checkSubordinates(sourceNodeId);
     },
-    [findAllSubordinatesFromNodes, nodes]
+    [nodes]
   );
 
   const checkSameDepartment = useCallback(

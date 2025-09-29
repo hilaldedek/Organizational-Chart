@@ -16,18 +16,48 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
   const [hovered, setHovered] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { setNodes, setEdges, addUnassignedEmployees } = useOrgChartStore();
-//işaret
+  //işaret
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
+      // Data validation ve temizleme
+      if (!data || !data.person_id) {
+        console.error("Invalid employee data:", data);
+        e.preventDefault();
+        return;
+      }
+
+      // Clean employee data
+      const cleanEmployeeData = {
+        person_id: data.person_id,
+        first_name: data.first_name || "Unknown",
+        last_name: data.last_name || "Unknown",
+        title: data.title || "",
+        department_id: data.department_id
+          ? data.department_id.toString()
+          : null,
+        manager_id: data.manager_id,
+        role: data.role || "EMPLOYEE",
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+
       const dragData: DragData = {
         type: "employee-node",
-        employee: data,
-        sourceNodeId: data.person_id,
-        person_id: data.person_id,
+        employee: cleanEmployeeData,
+        sourceNodeId: cleanEmployeeData.person_id,
+        person_id: cleanEmployeeData.person_id,
       };
+
       e.dataTransfer.setData("application/json", JSON.stringify(dragData));
-      data.onDragStart?.(data.person_id); // ✅ optional chaining
-      console.log("Dragging employee:", data.first_name, data.last_name,data.department_id);
+      data.onDragStart?.(cleanEmployeeData.person_id);
+
+      console.log("Clean employee data:", cleanEmployeeData);
+      console.log(
+        "Dragging employee:",
+        cleanEmployeeData.first_name,
+        cleanEmployeeData.last_name,
+        cleanEmployeeData.department_id
+      );
     },
     [data]
   );
@@ -64,9 +94,12 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
             dropData.employee || dropData,
             sourceId
           ); // ✅ optional chaining
-          console.log("DROP DATA: EmployeeNode", data.person_id,
+          console.log(
+            "DROP DATA: EmployeeNode",
+            data.person_id,
             dropData.employee || dropData,
-            sourceId);
+            sourceId
+          );
         }
       } catch (error) {
         console.error("Drop verisi parse edilemedi:", error);

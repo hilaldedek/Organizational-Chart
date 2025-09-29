@@ -85,6 +85,7 @@ export interface UpdateEmployeeParams {
   person_id: string;
   drop_department_id: string;
   drop_employee_id: string;
+  employees_to_move_count?: number; // Taşınacak toplam employee sayısı
 }
 
 export interface DragHooksParams {
@@ -110,6 +111,5 @@ export interface UseOrgChartParams {
 }
 
 export interface UseDragAndDropsParams {
-  findAllSubordinatesFromNodes: (nodeId: string, nodes: Node[]) => Node[];
   areInSameDepartmentNodes: (sourceNode: Node, targetNode: Node) => boolean;
 }

@@ -1,6 +1,6 @@
 // src/app/utils/constants.ts
 export const DEPARTMENT_MIN_WIDTH = 300;
-export const DEPARTMENT_MIN_HEIGHT = 200;
+export const DEPARTMENT_MIN_HEIGHT = 400;
 
 export const calculateRelativePosition = (
   e: React.DragEvent | DragEvent,

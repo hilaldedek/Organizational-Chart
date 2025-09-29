@@ -25,37 +25,6 @@ export const DepartmentNodeComponent: React.FC<{
   const { nodes, setNodes, updateEdgesForEmployee } = useOrgChartStore();
 
   // Alt personelleri bulma fonksiyonu
-  const findAllSubordinatesFromNodes = useCallback(
-    (nodeId: string, allNodes: typeof nodes): typeof nodes => {
-      const result: typeof nodes = [];
-      const visited = new Set<string>();
-      console.log("allNodes-DepartmentNodeComponent: ", allNodes);
-      const findSubordinates = (currentNodeId: string) => {
-        if (visited.has(currentNodeId)) return;
-        visited.add(currentNodeId);
-
-        const subordinates = allNodes.filter(
-          (node) =>
-            node.type === "employee" &&
-            node.data?.manager_id?.toString() === currentNodeId
-        );
-        console.log("subordinates-DepartmentNodeComponent: ", subordinates);
-
-        subordinates.forEach((subordinate) => {
-          result.push(subordinate);
-          findSubordinates(subordinate.id);
-        });
-      };
-
-      findSubordinates(nodeId);
-      console.log(
-        `Found ${result.length} subordinates for ${nodeId}:`,
-        result.map((n) => n.data?.first_name)
-      );
-      return result;
-    },
-    []
-  );
 
   // Departmanlar arası taşıma fonksiyonu
   const handleInterDepartmentMove = useCallback(
@@ -79,18 +48,10 @@ export const DepartmentNodeComponent: React.FC<{
         }
         // Eğer departmanda personel yoksa targetManagerId null kalır
 
-        // Taşınacak personel sayısını hesapla (kendisi + tüm alt personelleri)
-        const allSubordinates = findAllSubordinatesFromNodes(
-          sourceNodeId,
-          nodes
-        );
-        const employeesToMoveCount = 1 + allSubordinates.length; // Kendisi + alt personelleri
-
         const result = await handleMoveEmployeeBetweenDepartments({
           person_id: sourceNodeId,
           new_department_id: targetDepartmentId,
           drop_employee_id: targetManagerId || undefined, // null ise undefined gönder
-          employees_to_move_count: employeesToMoveCount,
         });
         console.log("RESULT: ", result);
         if (!result?.success) {
@@ -98,11 +59,19 @@ export const DepartmentNodeComponent: React.FC<{
           return;
         }
 
+        // API'den gelen taşınan personel ID'lerini kullan
+        const movedEmployeeIds = result.movedEmployeeIds || [sourceNodeId];
+        console.log("Moved employee IDs from API:", movedEmployeeIds);
+
         // Taşınan employee'ları yeni departmana taşı
         const sourceNode = nodes.find((n) => n.id === sourceNodeId);
         if (sourceNode) {
           // Eski manager'ı bul ve edge'ini sil
           const oldManagerId = sourceNode.data?.manager_id?.toString();
+          console.log(
+            "OLD MANAGER ID - departmentNodeComponent: ",
+            oldManagerId
+          );
           if (oldManagerId) {
             const { setEdges } = useOrgChartStore.getState();
             setEdges((prev) =>
@@ -115,26 +84,19 @@ export const DepartmentNodeComponent: React.FC<{
             );
           }
 
-          // Tüm alt personelleri bul
-          const allSubordinates = findAllSubordinatesFromNodes(
-            sourceNodeId,
-            nodes
-          );
-          const allMovedNodes = [sourceNode, ...allSubordinates];
-
-          // Tüm taşınan node'ları yeni departmana taşı
+          // API'den gelen ID'lere göre node'ları güncelle
           setNodes((prev) =>
             prev.map((node) => {
-              if (allMovedNodes.some((movedNode) => movedNode.id === node.id)) {
+              if (movedEmployeeIds.includes(node.id)) {
                 return {
                   ...node,
                   parentId: targetDepartmentId,
                   data: {
                     ...node.data,
-                    department_id: parseInt(targetDepartmentId),
+                    department_id: targetDepartmentId,
                     manager_id:
                       node.id === sourceNodeId && targetManagerId
-                        ? parseInt(targetManagerId)
+                        ? targetManagerId
                         : node.data.manager_id,
                   },
                 };
@@ -165,7 +127,6 @@ export const DepartmentNodeComponent: React.FC<{
       nodes,
       setNodes,
       updateEdgesForEmployee,
-      findAllSubordinatesFromNodes,
     ]
   );
 
@@ -181,7 +142,10 @@ export const DepartmentNodeComponent: React.FC<{
   const departmentHasEmployees = useMemo(() => {
     return departmentEmployees.length > 0;
   }, [departmentEmployees.length, data.unit_id]);
-
+  // console.log(
+  //   "DEPARTMENT EMPLOYEES - departmentNodeComponent: ",
+  //   departmentEmployees
+  // );
   // Departman yöneticisini bul - önce isManager field'ına bak, yoksa ilk employee'yi al
   const departmentManager = useMemo(() => {
     let manager = departmentEmployees.find(
@@ -285,7 +249,11 @@ export const DepartmentNodeComponent: React.FC<{
           (!parsed.type && parsed.person_id)
         ) {
           const employee: Employee =
-            parsed.type === "employee" ? parsed.data : parsed;
+            parsed.type === "employee"
+              ? parsed.data
+              : parsed.type === "employee-node"
+              ? parsed.employee
+              : parsed;
 
           // İlk atama için departmanda zaten personel varsa reddet (departmanlar arası taşıma için değil)
           if (!parsed.type || parsed.type === "employee") {
@@ -335,12 +303,24 @@ export const DepartmentNodeComponent: React.FC<{
 
   return (
     <div>
+      <NodeResizer
+        color="#007acc"
+        isVisible={selected}
+        minWidth={DEPARTMENT_MIN_WIDTH}
+        minHeight={DEPARTMENT_MIN_HEIGHT}
+        handleStyle={{
+          background: "#007acc",
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+        }}
+      />
       <div style={headerStyle}>
         <div className="text-center text-xl font-semibold">
           {data.unit_name}
         </div>
 
-        <div className="mt-2 font-normal text-sm flex items-center justify-center">
+        {/* <div className="mt-2 font-normal text-sm flex items-center justify-center">
           <span className="text-[#252A34]">Yönetici:</span>
           {departmentManager ? (
             <span className="text-[#4caf50] mr-1 ml-0.5">
@@ -356,13 +336,13 @@ export const DepartmentNodeComponent: React.FC<{
           ) : (
             <FcHighPriority className="w-4 h-4" />
           )}
-        </div>
+        </div> */}
 
-        {departmentEmployees.length >= 0 && (
+        {/* {departmentEmployees.length >= 0 && (
           <div className="mt-1 text-xs font-normal text-gray-600">
             Personel Sayısı: {departmentEmployees.length}
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Instructions */}
@@ -372,18 +352,6 @@ export const DepartmentNodeComponent: React.FC<{
         onDragLeave={handleDragLeave}
         onDrop={handleEmployeeToDepartmentDrop}
       >
-        <NodeResizer
-          color="#007acc"
-          isVisible={selected}
-          minWidth={DEPARTMENT_MIN_WIDTH}
-          minHeight={DEPARTMENT_MIN_HEIGHT}
-          handleStyle={{
-            background: "#007acc",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-          }}
-        />
         <div
           style={{
             position: "absolute",

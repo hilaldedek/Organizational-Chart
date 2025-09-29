@@ -152,13 +152,11 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
     async ({ 
       person_id, 
       new_department_id, 
-      drop_employee_id,
-      employees_to_move_count
+      drop_employee_id
     }: { 
       person_id: string; 
       new_department_id: string; 
       drop_employee_id?: string; // Optional yapıldı
-      employees_to_move_count?: number; // Taşınacak toplam employee sayısı
     }) => {
       if (updatingEmployees.has(person_id)) {
         showToast("warn", "Bu personel zaten güncelleniyor, lütfen bekleyin.");
@@ -178,8 +176,7 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
         const requestBody: any = {
           person_id, 
           new_department_id,
-          drop_employee_id,
-          employees_to_move_count
+          drop_employee_id
         };
         
         // if (drop_employee_id) {
@@ -203,7 +200,11 @@ const handleMoveEmployeeBetweenDepartments = useCallback(
         }
 
         showToast("success", "Personel ve alt personelleri başarıyla yeni departmana taşındı.");
-        return { success: true, movedEmployees: data.movedEmployees };
+        return { 
+          success: true, 
+          movedEmployees: data.movedEmployees,
+          movedEmployeeIds: data.movedEmployeeIds // API'den gelen taşınan personel ID'leri
+        };
       } catch (error) {
         console.error("API hatası:", error);
         const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";

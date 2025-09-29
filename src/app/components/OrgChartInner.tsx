@@ -29,33 +29,6 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     applyHierarchicalLayout,
   } = useOrgChartStore();
 
-  const findAllSubordinatesFromNodes = useCallback(
-    (nodeId: string, nodes: Node[]): Node[] => {
-      const result: Node[] = [];
-      const visited = new Set<string>();
-
-      const findSubordinates = (currentNodeId: string) => {
-        if (visited.has(currentNodeId)) return;
-        visited.add(currentNodeId);
-
-        const subordinates = nodes.filter(
-          (node) =>
-            node.type === "employee" &&
-            node.data?.manager_id?.toString() === currentNodeId
-        );
-
-        subordinates.forEach((subordinate) => {
-          result.push(subordinate);
-          findSubordinates(subordinate.id);
-        });
-      };
-
-      findSubordinates(nodeId);
-      return result;
-    },
-    []
-  );
-
   const areInSameDepartmentNodes = useCallback(
     (sourceNode: Node, targetNode: Node): boolean => {
       return (
@@ -66,7 +39,6 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
   );
 
   const { handleEmployeeDragStart, handleEmployeeDrop } = useDragAndDrops({
-    findAllSubordinatesFromNodes,
     areInSameDepartmentNodes,
   });
 
@@ -94,6 +66,11 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
 
       if (existingEmployeeNode) {
         (async () => {
+          // Mevcut employee node'u sil
+          setNodes((prev) =>
+            prev.filter((node) => node.id !== employee.person_id.toString())
+          );
+
           const targetDepartmentEmployees = nodes.filter(
             (node) => node.type === "employee" && node.parentId === departmentId
           );
@@ -111,22 +88,14 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
 
           if (!result.success) return;
 
-          const { nodes: currentNodes } = useOrgChartStore.getState();
-          const movedEmployeeIds = [employee.person_id.toString()];
-
-          const childrenNodes = currentNodes.filter((node) => {
-            if (
-              node.type !== "employee" ||
-              node.id === employee.person_id.toString()
-            )
-              return false;
-            const nodeData = node.data as any;
-            return nodeData?.parents_connection?.startsWith(
-              employee.person_id.toString()
-            );
-          });
-
-          childrenNodes.forEach((child) => movedEmployeeIds.push(child.id));
+          // API'den gelen taşınan personel ID'lerini kullan
+          const movedEmployeeIds = result.movedEmployeeIds || [
+            employee.person_id.toString(),
+          ];
+          console.log(
+            "Moved employee IDs from API (OrgChartInner):",
+            movedEmployeeIds
+          );
 
           setNodes((prev) =>
             prev.map((node) => {
@@ -134,6 +103,15 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
                 return {
                   ...node,
                   parentId: departmentId,
+                  data: {
+                    ...node.data,
+                    department_id: departmentId,
+                    manager_id:
+                      node.id === employee.person_id.toString() &&
+                      dropEmployeeId !== employee.person_id.toString()
+                        ? dropEmployeeId
+                        : node.data?.manager_id,
+                  },
                   position: {
                     x: position.x + (Math.random() - 0.5) * 100,
                     y: position.y + (Math.random() - 0.5) * 100,
@@ -144,13 +122,32 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
             })
           );
 
-          setEdges((prev) =>
-            prev.filter((edge) => {
-              const sourceMoved = movedEmployeeIds.includes(edge.source);
-              const targetMoved = movedEmployeeIds.includes(edge.target);
-              return !sourceMoved && !targetMoved;
-            })
-          );
+          // Sadece ana employee'un edge'ini güncelle, diğerlerinin edge'leri aynı kalacak
+          if (dropEmployeeId !== employee.person_id.toString()) {
+            // Ana employee'un eski edge'ini sil
+            setEdges((prev) =>
+              prev.filter(
+                (edge) =>
+                  !(
+                    edge.source === employee.person_id.toString() ||
+                    edge.target === employee.person_id.toString()
+                  )
+              )
+            );
+
+            // Ana employee'un yeni edge'ini oluştur
+            setEdges((prev) => [
+              ...prev,
+              {
+                id: `${dropEmployeeId}-${employee.person_id}`,
+                source: dropEmployeeId,
+                target: employee.person_id.toString(),
+                type: "smoothstep",
+                animated: true,
+                style: { stroke: "#555", strokeWidth: 2 },
+              },
+            ]);
+          }
         })();
       } else {
         const departmentEmployees = nodes.filter(
@@ -170,6 +167,7 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
             person_id: employee.person_id.toString(),
             drop_department_id: departmentId,
             drop_employee_id: employee.person_id.toString(),
+            employees_to_move_count: 1, // Sadece kendisi ekleniyor
           });
           if (!result.success) return;
 
@@ -187,6 +185,8 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
             data: {
               ...employee,
               person_id: employee.person_id,
+              department_id: departmentId, // String olarak tut
+              manager_id: employee.person_id, // Kendisi manager olacak
               isManager: true,
               onDragStart: handleEmployeeDragStart,
               onDrop: handleEmployeeDrop,

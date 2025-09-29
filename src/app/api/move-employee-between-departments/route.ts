@@ -32,7 +32,7 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { person_id, new_department_id, drop_employee_id, employees_to_move_count } = parsedData;
+    const { person_id, new_department_id, drop_employee_id } = parsedData;
     if (!person_id || !new_department_id) {
       return NextResponse.json(
         { error: "Eksik parametre. 'person_id' ve 'new_department_id' gereklidir." },
@@ -67,6 +67,25 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
       );
     }
 
+    // Taşınacak personel sayısını hesapla (kendisi + tüm alt personelleri)
+    const calculateEmployeesToMove = async (sourcePersonId: string): Promise<number> => {
+      const result = await client.query(
+        `WITH RECURSIVE subordinates AS (
+          SELECT person_id, 1 as level FROM employee WHERE person_id = $1
+          UNION ALL
+          SELECT e.person_id, s.level + 1 FROM employee e
+          INNER JOIN subordinates s ON e.manager_id = s.person_id
+          WHERE s.level < 10  -- Max depth protection
+        )
+        SELECT COUNT(*) as count FROM subordinates`,
+        [sourcePersonId]
+      );
+      return parseInt(result.rows[0].count, 10);
+    };
+
+    const employeesToMoveCount = await calculateEmployeesToMove(person_id);
+    console.log("Backend calculated employees to move:", employeesToMoveCount);
+
     const deptResult = await client.query(
       "SELECT unit_id, max_employees, employee_count FROM department WHERE unit_id = $1",
       [new_department_id]
@@ -83,24 +102,48 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
     const targetDepartment = deptResult.rows[0];
     const maxEmployee = targetDepartment.max_employees;
     const currentEmployeeCount = targetDepartment.employee_count;
+    
   
     console.log("Hedef departman bilgileri:", {
       maxEmployee,
       currentEmployeeCount,
-      employees_to_move_count
+      employeesToMoveCount
     });
     
-    const totalEmployeeCount = currentEmployeeCount + (employees_to_move_count || 0);
+    const totalEmployeeCount = currentEmployeeCount + employeesToMoveCount;
+    console.log("Total employee count:", totalEmployeeCount);
   
-    if (employees_to_move_count && maxEmployee && totalEmployeeCount > maxEmployee) {
+    if (maxEmployee && totalEmployeeCount > maxEmployee) {
       await client.query("ROLLBACK");
       return NextResponse.json(
         { 
-          error: `Bu taşıma departmanın maximum çalışan değerini aşıyor. Mevcut çalışan sayısı: ${currentEmployeeCount}, Taşınacak çalışan sayısı: ${employees_to_move_count}, Toplam: ${totalEmployeeCount}, Maksimum izin verilen: ${maxEmployee}` 
+          error: `Bu taşıma departmanın maximum çalışan değerini aşıyor. Mevcut çalışan sayısı: ${currentEmployeeCount}, Taşınacak çalışan sayısı: ${employeesToMoveCount}, Toplam: ${totalEmployeeCount}, Maksimum izin verilen: ${maxEmployee}` 
         },
         { status: 400 }
       );
     }
+
+    // // Dairesel hiyerarşi kontrolü (eğer drop_employee_id varsa)
+    // if (drop_employee_id) {
+    //   const circularCheckResult = await client.query(
+    //     `WITH RECURSIVE subordinates AS (
+    //       SELECT person_id FROM employee WHERE manager_id = $1
+    //       UNION ALL
+    //       SELECT e.person_id FROM employee e
+    //       INNER JOIN subordinates s ON e.manager_id = s.person_id
+    //     )
+    //     SELECT person_id FROM subordinates WHERE person_id = $2`,
+    //     [person_id, drop_employee_id]
+    //   );
+      
+    //   if (circularCheckResult.rowCount && circularCheckResult.rowCount > 0) {
+    //     await client.query("ROLLBACK");
+    //     return NextResponse.json(
+    //       { error: "Dairesel hiyerarşi oluşturulamaz! Bir personel kendi alt personellerinden birinin üstü olamaz." },
+    //       { status: 400 }
+    //     );
+    //   }
+    // }
     //sürüklediğimiz employee parentları
     const sourceEmployeeParentsConnection=await client.query(
       "SELECT parents_connection FROM employee WHERE person_id = $1",
@@ -141,16 +184,17 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
           SET parents_connection = regexp_replace(parents_connection, '^' || $1, $2),
               department_id = $3
           WHERE parents_connection LIKE $1 || '%'
-          RETURNING 1
+          RETURNING person_id
        )
-       SELECT COUNT(*) AS updated_count FROM updated;`,
+       SELECT person_id FROM updated;`,
       [sourceParentsConnection, newTargetEmployeeParentsConnection, new_department_id]
     );
     
-    console.log('Updated rows count:', result.rows[0].updated_count);
+    const movedEmployeeIds = result.rows.map(row => row.person_id.toString());
+    const movedCount = movedEmployeeIds.length;
     
-
-    const movedCount = parseInt(result.rows[0].updated_count, 10);
+    console.log('Moved employee IDs:', movedEmployeeIds);
+    console.log('Updated rows count:', movedCount);
 
     // Eski departmanın employee_count'unu güncelle
     if (currentDepartmentId) {
@@ -215,6 +259,7 @@ console.log("PERSON_ID: ",person_id,"DROP_EMLOYEE_ID: ",drop_employee_id,"NEW_DE
     return NextResponse.json({
       message: "Employee ve children'ları başarıyla yeni departmana taşındı.",
       movedEmployees: movedCount,
+      movedEmployeeIds: movedEmployeeIds, // Taşınan personel ID'leri
     });
   } catch (err) {
     await client.query("ROLLBACK");

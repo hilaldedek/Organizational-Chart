@@ -4,7 +4,6 @@ import { Department, Employee } from "./types/orgChart";
 import { ReactFlowProvider } from "@xyflow/react";
 import OrgChart from "./components/OrgChart";
 import Sidebar from "./components/Sidebar";
-import { useOrgChartStore } from "./stores/orgChartStore";
 
 export default function HomePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
