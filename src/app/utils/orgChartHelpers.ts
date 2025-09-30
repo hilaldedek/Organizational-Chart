@@ -32,16 +32,19 @@ export const headerStyle: CSSProperties = {
 };
 
 export const getNodeStyle = (draggedOver: boolean, data: EmployeeNodeData): CSSProperties => ({
-  background: "#f5f5f5",
-  border: draggedOver ? "2px solid #4caf50" : "1px solid #ddd",
-  borderRadius: "8px",
-  padding: "10px",
-  minWidth: "120px",
+  background: draggedOver ? "rgba(76, 175, 80, 0.1)" : "rgba(249, 249, 249, 0.8)", // Instruction text ile uyumlu
+  border: draggedOver ? "2px dashed #4caf50" : "2px solid #ddd", // Department container ile uyumlu
+  borderRadius: "12px", // Department container ile aynı
+  padding: "8px 12px", // Daha kompakt padding
+  minWidth: "100px", // Daha küçük minimum genişlik
   textAlign: "center" as const,
-  fontSize: "12px",
+  fontSize: "14px", // Instruction text ile aynı boyut
+  color: "#999", // Instruction text ile aynı renk
+  fontStyle: "italic", // Instruction text ile aynı stil
   position: "relative",
-  boxShadow: draggedOver ? "0 0 10px rgba(76, 175, 80, 0.3)" : "0 1px 3px rgba(0,0,0,0.1)",
-  transition: "all 0.2s ease",
+  boxShadow: draggedOver ? "0 0 15px rgba(76, 175, 80, 0.3)" : "0 2px 4px rgba(0,0,0,0.1)", // Department container ile uyumlu
+  transition: "all 0.3s ease", // Department container ile aynı
+  lineHeight: "1.4", // Instruction text ile aynı
 });
 
 export const handleStyle: CSSProperties = {

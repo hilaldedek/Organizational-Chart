@@ -155,18 +155,18 @@ export const useOrgChart = ({
             };
             employeeNodes.push(managerNode);
 
-            // CEO'ya bağlantı
-            if (manager.manager_id && ceoData.length > 0 && 
-                manager.manager_id === ceoData[0].person_id) {
-              hierarchyEdges.push({
-                id: `${manager.manager_id}-${manager.person_id}`,
-                source: manager.manager_id.toString(),
-                target: manager.person_id.toString(),
-                type: "smoothstep",
-                style: { stroke: "#4caf50", strokeWidth: 2 , strokeDasharray: undefined},
-                labelStyle: { fontSize: 10 },
-              });
-            }
+            // CEO'ya bağlantı - UI'da gizleniyor
+            // if (manager.manager_id && ceoData.length > 0 && 
+            //     manager.manager_id === ceoData[0].person_id) {
+            //   hierarchyEdges.push({
+            //     id: `${manager.manager_id}-${manager.person_id}`,
+            //     source: manager.manager_id.toString(),
+            //     target: manager.person_id.toString(),
+            //     type: "smoothstep",
+            //     style: { stroke: "#4caf50", strokeWidth: 2 , strokeDasharray: undefined},
+            //     labelStyle: { fontSize: 10 },
+            //   });
+            // }
           }
 
           // Diğer çalışanlar
