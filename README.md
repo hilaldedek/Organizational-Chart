@@ -1,6 +1,7 @@
 # 🏢 Organizasyon Şeması Projesi
 
 Modern, interaktif ve dinamik bir organizasyon şeması uygulaması. Bu proje, şirket hiyerarşisini görselleştirmek, personel yönetimi yapmak ve departman organizasyonunu kolaylaştırmak için geliştirilmiştir.
+[Demo](https://organizational-chart-hilal.vercel.app/)
 
 ## 📋 İçindekiler
 
