@@ -16,6 +16,11 @@ import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 import { OrgChartInnerProps } from "../types/orgChart";
 import { showToast } from "../utils/toast";
 
+/**
+ * Organizasyon şemasının iç bileşeni - ReactFlow ile node'ları ve edge'leri render eder
+ * @param onEmployeeAssigned - Personel atandığında çalışacak callback
+ * @returns JSX.Element
+ */
 const OrgChartInner: React.FC<OrgChartInnerProps> = ({
   onEmployeeAssigned,
 }) => {
@@ -29,6 +34,12 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     applyHierarchicalLayout,
   } = useOrgChartStore();
 
+  /**
+   * İki node'un aynı departmanda olup olmadığını kontrol eder
+   * @param sourceNode - Kaynak node
+   * @param targetNode - Hedef node
+   * @returns boolean - Aynı departmandaysa true, değilse false
+   */
   const areInSameDepartmentNodes = useCallback(
     (sourceNode: Node, targetNode: Node): boolean => {
       return (
@@ -47,6 +58,13 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     handleMoveEmployeeBetweenDepartments,
   } = useEmployeeUpdate();
 
+  /**
+   * Personel departmana bırakıldığında çalışır ve gerekli işlemleri başlatır
+   * @param departmentId - Hedef departman ID'si
+   * @param employee - Bırakılan personel verisi
+   * @param position - Bırakma pozisyonu
+   * @returns void
+   */
   const handleDepartmentEmployeeDrop = useCallback(
     (
       departmentId: string,
@@ -236,6 +254,10 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     }
   }, [nodes.length, edges.length, applyHierarchicalLayout]);
 
+  /**
+   * ReactFlow için node tiplerini tanımlar
+   * @returns Node tipleri objesi
+   */
   const nodeTypes = useMemo(
     () => ({
       employee: EmployeeNode,
@@ -244,10 +266,20 @@ const OrgChartInner: React.FC<OrgChartInnerProps> = ({
     []
   );
 
+  /**
+   * Canvas üzerinde sürükleme işlemi sırasında çalışır
+   * @param e - Drag event
+   * @returns void
+   */
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   }, []);
 
+  /**
+   * Canvas'a bırakma işlemi sırasında çalışır
+   * @param e - Drop event
+   * @returns void
+   */
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     try {

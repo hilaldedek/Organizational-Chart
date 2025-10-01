@@ -9,6 +9,12 @@ interface OrgChartProps extends OrgChartInnerProps {
   onEmployeeAssigned?: (employeeId: string) => void;
 }
 
+/**
+ * Ana organizasyon şeması bileşeni - ReactFlow provider ile sarmalanmış
+ * @param newDepartment - Yeni departman verisi
+ * @param onEmployeeAssigned - Personel atandığında çalışacak callback
+ * @returns JSX.Element
+ */
 const OrgChart: React.FC<OrgChartProps> = ({
   newDepartment,
   onEmployeeAssigned,

@@ -7,6 +7,12 @@ import EmployeeCard from "./EmployeeCard";
 import { useOrgChartStore } from "../stores/orgChartStore";
 import { SidebarProps } from "../types/sidebar";
 
+/**
+ * Yan panel bileşeni - atanmamış personelleri listeler ve yeni personel/departman ekleme işlemlerini yönetir
+ * @param employees - Personel listesi (kullanılmıyor, store'dan alınıyor)
+ * @param onAssign - Personel atandığında çalışacak callback
+ * @returns JSX.Element
+ */
 const Sidebar: React.FC<SidebarProps> = ({ employees, onAssign }) => {
   const {
     departments,

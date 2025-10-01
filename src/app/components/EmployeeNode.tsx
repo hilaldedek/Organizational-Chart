@@ -9,6 +9,11 @@ import { useOrgChartStore } from "../stores/orgChartStore";
 import { FaDeleteLeft } from "react-icons/fa6";
 import { showToast } from "../utils/toast";
 
+/**
+ * Personel node bileşeni - sürükle-bırak ve silme işlemlerini destekler
+ * @param data - Personel node verisi
+ * @returns JSX.Element
+ */
 const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
   data,
 }) => {
@@ -16,7 +21,11 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
   const [hovered, setHovered] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { setNodes, setEdges, addUnassignedEmployees } = useOrgChartStore();
-  //işaret
+  /**
+   * Personel sürükleme işlemi başladığında çalışır ve temiz veri hazırlar
+   * @param e - Drag event
+   * @returns void
+   */
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
       // Data validation ve temizleme
@@ -62,12 +71,21 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
     [data]
   );
 
+  /**
+   * Sürükleme işlemi sırasında personel üzerine gelindiğinde çalışır
+   * @param e - Drag event
+   * @returns void
+   */
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDraggedOver(true);
   }, []);
 
+  /**
+   * Sürükleme işlemi sırasında personelden ayrıldığında çalışır
+   * @returns void
+   */
   const handleDragLeave = useCallback(() => {
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
@@ -75,6 +93,11 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
     dragTimeoutRef.current = setTimeout(() => setDraggedOver(false), 100);
   }, []);
 
+  /**
+   * Personel personel üzerine bırakıldığında çalışır ve hiyerarşi kurar
+   * @param e - Drop event
+   * @returns void
+   */
   const handleEmployeeToEmployeeDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -116,6 +139,11 @@ const EmployeeNodeComponent: React.FC<{ data: EmployeeNodeData }> = ({
     };
   }, []);
 
+  /**
+   * Personeli departmandan siler ve atanmamış listesine ekler
+   * @param e - Mouse event
+   * @returns Promise<void>
+   */
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {

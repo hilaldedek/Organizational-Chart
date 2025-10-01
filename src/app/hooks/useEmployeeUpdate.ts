@@ -14,7 +14,13 @@ export const useEmployeeUpdate = () => {
     setNodes,
   } = useOrgChartStore();
 
-  // Departman içi manager güncelleme (sadece manager_id değişir)
+  /**
+   * Aynı departman içinde personelin yöneticisini günceller
+   * @param person_id - Güncellenecek personelin ID'si
+   * @param drop_department_id - Personelin bulunduğu departman ID'si
+   * @param drop_employee_id - Yeni yönetici olacak personelin ID'si
+   * @returns Promise<{success: boolean, employee?: any}> - İşlem sonucu
+   */
   const handleIntraDepartmentManagerUpdate = useCallback(
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
       if (updatingEmployees.has(person_id)) {
@@ -67,7 +73,13 @@ export const useEmployeeUpdate = () => {
     [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee]
   );
 
-  // Yeni personel departmana ekleme (hem department_id hem manager_id değişir)
+  /**
+   * Sidebar'dan sürüklenen yeni personeli belirli bir departmana ekler
+   * @param person_id - Eklenecek personelin ID'si
+   * @param drop_department_id - Personelin ekleneceği departman ID'si
+   * @param drop_employee_id - Personelin yöneticisi olacak personelin ID'si
+   * @returns Promise<{success: boolean, employee?: any}> - İşlem sonucu
+   */
   const handleAddEmployeeToDepartment = useCallback(
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
       console.log("handleAddEmployeeToDepartment tetiklendi!", { person_id, drop_department_id, drop_employee_id });
@@ -132,7 +144,13 @@ export const useEmployeeUpdate = () => {
     [showToast, addUpdatingEmployee, removeUpdatingEmployee, updatingEmployees, removeUnassignedEmployee, setNodes]
   );
 
-  // Hangi API'yi kullanacağını belirleyen ana fonksiyon
+  /**
+   * Personel güncelleme işlemlerini koordine eden ana fonksiyon
+   * @param person_id - Güncellenecek personelin ID'si
+   * @param drop_department_id - Hedef departman ID'si
+   * @param drop_employee_id - Hedef yönetici ID'si
+   * @returns Promise<{success: boolean, employee?: any}> - İşlem sonucu
+   */
   const handleEmployeeUpdate = useCallback(
     async ({ person_id, drop_department_id, drop_employee_id }: UpdateEmployeeParams) => {
       // API çağrısı tamamlandığında başarılı olursa personeli atanmamış listesinden kaldır
@@ -147,7 +165,13 @@ export const useEmployeeUpdate = () => {
     [handleIntraDepartmentManagerUpdate]
   );
 
-  // Departmanlar arası taşıma
+  /**
+   * Personeli farklı bir departmana taşır ve alt personellerini de birlikte taşır
+   * @param person_id - Taşınacak personelin ID'si
+   * @param new_department_id - Yeni departman ID'si
+   * @param drop_employee_id - Yeni yönetici olacak personelin ID'si (opsiyonel)
+   * @returns Promise<{success: boolean, movedEmployees?: number, movedEmployeeIds?: string[]}> - İşlem sonucu
+   */
 const handleMoveEmployeeBetweenDepartments = useCallback(
     async ({ 
       person_id, 

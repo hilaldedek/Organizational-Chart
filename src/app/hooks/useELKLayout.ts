@@ -26,9 +26,19 @@ interface ELKGraph {
   layoutOptions?: Record<string, string>;
 }
 
+/**
+ * ELK layout algoritması için React hook'u
+ * @returns ELK layout fonksiyonları
+ */
 export const useELKLayout = () => {
   const elk = new ELK();
 
+  /**
+   * React Flow node'larını ve edge'lerini ELK formatına dönüştürür
+   * @param nodes - React Flow node'ları
+   * @param edges - React Flow edge'leri
+   * @returns ELK graph yapısı
+   */
   const createELKGraph = useCallback((nodes: Node[], edges: Edge[]): ELKGraph => {
     // Node boyutlarını tanımla
     const nodeWidth = 200;
@@ -81,6 +91,12 @@ export const useELKLayout = () => {
     };
   }, []);
 
+  /**
+   * ELK layout algoritmasını uygular ve node pozisyonlarını günceller
+   * @param nodes - React Flow node'ları
+   * @param edges - React Flow edge'leri
+   * @returns Promise<Node[]> - Pozisyonları güncellenmiş node'lar
+   */
   const applyELKLayout = useCallback(async (nodes: Node[], edges: Edge[]): Promise<Node[]> => {
     try {
       const elkGraph = createELKGraph(nodes, edges);
@@ -113,6 +129,12 @@ export const useELKLayout = () => {
     }
   }, [createELKGraph, elk]);
 
+  /**
+   * Hiyerarşik düzen için özelleştirilmiş ELK layout algoritmasını uygular
+   * @param nodes - React Flow node'ları
+   * @param edges - React Flow edge'leri
+   * @returns Promise<Node[]> - Hiyerarşik düzende pozisyonları güncellenmiş node'lar
+   */
   const applyHierarchicalLayout = useCallback(async (nodes: Node[], edges: Edge[]): Promise<Node[]> => {
     try {
       const elkGraph = createELKGraph(nodes, edges);

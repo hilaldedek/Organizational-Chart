@@ -10,6 +10,12 @@ import { useOrgChartStore } from "../stores/orgChartStore";
 import { useEmployeeUpdate } from "../hooks/useEmployeeUpdate";
 import { showToast } from "../utils/toast";
 
+/**
+ * Departman node bileşeni - sürükle-bırak işlemlerini destekler
+ * @param data - Departman verisi
+ * @param selected - Node seçili mi
+ * @returns JSX.Element
+ */
 export const DepartmentNodeComponent: React.FC<{
   data: DepartmentNodeData;
   selected: boolean;
@@ -26,6 +32,13 @@ export const DepartmentNodeComponent: React.FC<{
   const { handleMoveEmployeeBetweenDepartments } = useEmployeeUpdate();
   const { nodes, setNodes, updateEdgesForEmployee } = useOrgChartStore();
 
+  /**
+   * Personeli farklı departmanlar arasında taşıma işlemini gerçekleştirir
+   * @param sourceNodeId - Taşınacak personelin node ID'si
+   * @param targetDepartmentId - Hedef departman ID'si
+   * @param draggedEmployee - Sürüklenen personel verisi
+   * @returns Promise<void>
+   */
   const handleInterDepartmentMove = useCallback(
     async (
       sourceNodeId: string,
@@ -116,6 +129,10 @@ export const DepartmentNodeComponent: React.FC<{
     ]
   );
 
+  /**
+   * Bu departmana ait personelleri filtreler
+   * @returns Employee node'ları dizisi
+   */
   const departmentEmployees = useMemo(() => {
     return nodes.filter(
       (node) =>
@@ -123,10 +140,18 @@ export const DepartmentNodeComponent: React.FC<{
     );
   }, [nodes, data.unit_id]);
 
+  /**
+   * Departmanda personel olup olmadığını kontrol eder
+   * @returns boolean - Personel varsa true, yoksa false
+   */
   const departmentHasEmployees = useMemo(() => {
     return departmentEmployees.length > 0;
   }, [departmentEmployees.length]);
 
+  /**
+   * Departman yöneticisini bulur (isManager=true olan veya ilk personel)
+   * @returns Node | undefined - Departman yöneticisi node'u
+   */
   const departmentManager = useMemo(() => {
     let manager = departmentEmployees.find(
       (node) => node.data?.isManager === true
@@ -139,6 +164,11 @@ export const DepartmentNodeComponent: React.FC<{
     return manager;
   }, [departmentEmployees]);
 
+  /**
+   * Sürükleme işlemi sırasında departman üzerine gelindiğinde çalışır
+   * @param e - Drag event
+   * @returns void
+   */
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -162,6 +192,11 @@ export const DepartmentNodeComponent: React.FC<{
     }
   }, []);
 
+  /**
+   * Sürükleme işlemi sırasında departmandan ayrıldığında çalışır
+   * @param e - Drag event
+   * @returns void
+   */
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
@@ -179,6 +214,11 @@ export const DepartmentNodeComponent: React.FC<{
     }
   }, []);
 
+  /**
+   * Personel departmana bırakıldığında çalışır ve gerekli işlemleri başlatır
+   * @param e - Drop event
+   * @returns void
+   */
   const handleEmployeeToDepartmentDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();

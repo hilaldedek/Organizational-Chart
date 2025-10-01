@@ -54,24 +54,59 @@ const initialState = {
   updatingEmployees: new Set<string>(),
 };
 
+/**
+ * Organizasyon şeması için Zustand store'u
+ * @returns Organizasyon şeması state'i ve action'ları
+ */
 export const useOrgChartStore = create<OrgChartState>()(
   devtools(
     (set, get) => ({
       ...initialState,
       
+      /**
+       * Node'ları günceller
+       * @param nodes - Yeni node'lar veya güncelleme fonksiyonu
+       */
       setNodes: (nodes) => set((state) => ({
         nodes: typeof nodes === 'function' ? nodes(state.nodes) : nodes
       })),
       
+      /**
+       * Edge'leri günceller
+       * @param edges - Yeni edge'ler veya güncelleme fonksiyonu
+       */
       setEdges: (edges) => set((state) => ({
         edges: typeof edges === 'function' ? edges(state.edges) : edges
       })),
       
+      /**
+       * Departmanları günceller
+       * @param departments - Yeni departman listesi
+       */
       setDepartments: (departments) => set({ departments }),
+      
+      /**
+       * CEO verilerini günceller
+       * @param ceo - CEO verileri
+       */
       setCeo: (ceo) => set({ ceo }),
+      
+      /**
+       * Tüm personelleri günceller
+       * @param allEmployees - Tüm personel listesi
+       */
       setAllEmployees: (allEmployees) => set({ allEmployees }),
+      
+      /**
+       * Atanmamış personelleri günceller
+       * @param unassignedEmployees - Atanmamış personel listesi
+       */
       setUnassignedEmployees: (unassignedEmployees) => set({ unassignedEmployees }),
 
+      /**
+       * Atanmamış personel listesine yeni personeller ekler (duplicate kontrolü ile)
+       * @param newEmployees - Eklenecek yeni personeller
+       */
       addUnassignedEmployees: (newEmployees) => set((state) => {
         const existing = new Map(state.unassignedEmployees.map(e => [e.person_id, e]));
         newEmployees.forEach(emp => {
@@ -80,42 +115,89 @@ export const useOrgChartStore = create<OrgChartState>()(
         return { unassignedEmployees: Array.from(existing.values()) };
       }),
 
+      /**
+       * Atanmamış personel listesinden belirli bir personeli kaldırır
+       * @param employeeId - Kaldırılacak personelin ID'si
+       */
       removeUnassignedEmployee: (employeeId) => set((state) => ({
         unassignedEmployees: state.unassignedEmployees.filter(emp => emp.person_id !== employeeId)
       })),
       
+      /**
+       * Loading durumunu günceller
+       * @param loading - Loading durumu
+       */
       setLoading: (loading) => set({ loading }),
+      
+      /**
+       * IsLoading durumunu günceller
+       * @param isLoading - IsLoading durumu
+       */
       setIsLoading: (isLoading) => set({ isLoading }),
+      
+      /**
+       * Departman drop handler'ını ayarlar
+       * @param handler - Drop handler fonksiyonu
+       */
       setDepartmentDropHandler: (handler) => set({ departmentDropHandler: handler }),
       
+      /**
+       * Node değişikliklerini uygular
+       * @param changes - Node değişiklikleri
+       */
       onNodesChange: (changes) => set((state) => ({
         nodes: applyNodeChanges(changes, state.nodes)
       })),
       
+      /**
+       * Edge değişikliklerini uygular
+       * @param changes - Edge değişiklikleri
+       */
       onEdgesChange: (changes) => set((state) => ({
         edges: applyEdgeChanges(changes, state.edges)
       })),
       
+      /**
+       * İşlenen istekler listesine yeni istek ekler
+       * @param requestId - Eklenecek istek ID'si
+       */
       addProcessedRequest: (requestId) => set((state) => ({
         processedRequests: new Set([...state.processedRequests, requestId])
       })),
       
+      /**
+       * İşlenen istekler listesinden istek kaldırır
+       * @param requestId - Kaldırılacak istek ID'si
+       */
       removeProcessedRequest: (requestId) => set((state) => {
         const newSet = new Set(state.processedRequests);
         newSet.delete(requestId);
         return { processedRequests: newSet };
       }),
       
+      /**
+       * Güncellenen personeller listesine personel ekler
+       * @param employeeId - Eklenecek personel ID'si
+       */
       addUpdatingEmployee: (employeeId) => set((state) => ({
         updatingEmployees: new Set([...state.updatingEmployees, employeeId])
       })),
       
+      /**
+       * Güncellenen personeller listesinden personel kaldırır
+       * @param employeeId - Kaldırılacak personel ID'si
+       */
       removeUpdatingEmployee: (employeeId) => set((state) => {
         const newSet = new Set(state.updatingEmployees);
         newSet.delete(employeeId);
         return { updatingEmployees: newSet };
       }),
       
+      /**
+       * Node'lardaki personel verilerini günceller (manager_id ve department_id)
+       * @param sourceNodeId - Güncellenecek personel node ID'si
+       * @param targetNodeId - Hedef yönetici node ID'si
+       */
       updateEmployeeInNodes: (sourceNodeId, targetNodeId) => set((state) => {
         const targetNode = state.nodes.find(n => n.id === targetNodeId);
         const departmentId = targetNode?.parentId ? parseInt(targetNode.parentId) : null;
@@ -137,6 +219,11 @@ export const useOrgChartStore = create<OrgChartState>()(
         };
       }),
       
+      /**
+       * Personel için edge'leri günceller (eski edge'leri siler, yeni edge oluşturur)
+       * @param sourceNodeId - Kaynak personel node ID'si
+       * @param targetNodeId - Hedef yönetici node ID'si
+       */
       updateEdgesForEmployee: (sourceNodeId, targetNodeId) => set((state) => {
         const filteredEdges = state.edges.filter((edge) => edge.target !== sourceNodeId);
         const newEdge = {
@@ -149,6 +236,10 @@ export const useOrgChartStore = create<OrgChartState>()(
         return { edges: [...filteredEdges, newEdge] };
       }),
       
+      /**
+       * Otomatik layout uygular (ELK algoritması ile departman içi düzenleme)
+       * @returns Promise<void>
+       */
       applyAutoLayout: async () => {
         const { nodes, edges } = get();
         if (nodes.length === 0) return;
@@ -244,6 +335,10 @@ export const useOrgChartStore = create<OrgChartState>()(
         }
       },
       
+      /**
+       * Hiyerarşik layout uygular (ELK algoritması ile departman içi hiyerarşik düzenleme)
+       * @returns Promise<void>
+       */
       applyHierarchicalLayout: async () => {
         const { nodes, edges } = get();
         if (nodes.length === 0) return;
@@ -340,6 +435,9 @@ export const useOrgChartStore = create<OrgChartState>()(
         }
       },
       
+      /**
+       * Store'u başlangıç durumuna sıfırlar
+       */
       resetStore: () => set(initialState),
     }),
     { 

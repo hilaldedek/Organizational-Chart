@@ -5,6 +5,13 @@ import { Department, Employee, UseOrgChartParams } from "../types/orgChart";
 import { useOrgChartStore } from "../stores/orgChartStore";
 import { showToast } from "../utils/toast";
 
+/**
+ * Organizasyon şeması verilerini yöneten ana hook
+ * @param handleEmployeeDragStart - Personel sürükleme başlangıcı handler'ı
+ * @param handleEmployeeDrop - Personel bırakma handler'ı
+ * @param handleDepartmentEmployeeDrop - Departmana personel bırakma handler'ı
+ * @returns Organizasyon şeması verileri ve state yönetim fonksiyonları
+ */
 export const useOrgChart = ({
   handleEmployeeDragStart,
   handleEmployeeDrop,
@@ -34,6 +41,10 @@ export const useOrgChart = ({
   useEffect(() => {
     if (isInitializedRef.current) return;
 
+    /**
+     * CEO, departmanlar ve organizasyon hiyerarşisini API'den çeker ve node'lara dönüştürür
+     * @returns Promise<void>
+     */
     const fetchCeoAndDepartments = async () => {
       try {
         setLoading(true);
@@ -246,7 +257,6 @@ export const useOrgChart = ({
     isLoading, 
     onNodesChange, 
     onEdgesChange,
-    // Store actions da return edelim ki component'lar kullanabilsin
     setNodes,
     setEdges 
   };

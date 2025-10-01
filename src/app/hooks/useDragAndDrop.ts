@@ -24,11 +24,22 @@ export const useDragAndDrops = ({
   
   const { handleAddEmployeeToDepartment, handleIntraDepartmentManagerUpdate, handleMoveEmployeeBetweenDepartments } = useEmployeeUpdate();
 
+  /**
+   * Personel sürükleme işlemi başladığında çalışan fonksiyon
+   * @param sourceNodeId - Sürüklenen personelin node ID'si
+   */
   const handleEmployeeDragStart = useCallback((sourceNodeId: string) => {
     console.log("handleEmployeeDragStart tetiklendi!", sourceNodeId);
   }, []);
 
  
+  /**
+   * Aynı departman içinde personel taşıma işlemini gerçekleştirir
+   * @param sourceNodeId - Taşınacak personelin node ID'si
+   * @param targetNodeId - Hedef yöneticinin node ID'si
+   * @param draggedEmployee - Sürüklenen personel verisi
+   * @returns Promise<void>
+   */
   const handleIntraDepartmentMove = useCallback(
     async (sourceNodeId: string, targetNodeId: string, draggedEmployee: Employee) => {
       const { nodes: currentNodes } = useOrgChartStore.getState();
@@ -100,6 +111,13 @@ const result = await handleIntraDepartmentManagerUpdate({
     ]
   );
 
+  /**
+   * Farklı departmanlar arasında personel taşıma işlemini gerçekleştirir
+   * @param sourceNodeId - Taşınacak personelin node ID'si
+   * @param targetNodeId - Hedef yöneticinin node ID'si
+   * @param draggedEmployee - Sürüklenen personel verisi
+   * @returns Promise<void>
+   */
   const handleInterDepartmentMove = useCallback(
     async (sourceNodeId: string, targetNodeId: string, draggedEmployee: Employee) => {
       const { nodes: currentNodes } = useOrgChartStore.getState();
@@ -201,6 +219,13 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
     ]
   );
 
+  /**
+   * Personel bırakma işlemini yönetir ve gerekli taşıma işlemlerini başlatır
+   * @param targetNodeId - Hedef node ID'si
+   * @param draggedEmployee - Sürüklenen personel verisi
+   * @param draggedNodeId - Sürüklenen node ID'si
+   * @returns void
+   */
   const handleEmployeeDrop = useCallback(
     (targetNodeId: string, draggedEmployee: Employee, draggedNodeId: string) => {
       console.log("handleEmployeeDrop tetiklendi!", { targetNodeId, draggedNodeId,draggedEmployee });
@@ -332,6 +357,12 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
     ]
   );
 
+  /**
+   * Dairesel hiyerarşi kontrolü yapar (bir personelin kendi altındakine rapor verip veremeyeceğini kontrol eder)
+   * @param sourceNodeId - Kaynak node ID'si
+   * @param targetNodeId - Hedef node ID'si
+   * @returns boolean - Dairesel hiyerarşi varsa true, yoksa false
+   */
   const checkCircularHierarchy = useCallback(
     (sourceNodeId: string, targetNodeId: string): boolean => {
       const visited = new Set<string>();
@@ -353,6 +384,12 @@ console.log("APIII: ","person_id: ",sourceNodeId,"new_department_id: ",newDepart
     [nodes]
   );
 
+  /**
+   * İki personelin aynı departmanda olup olmadığını kontrol eder
+   * @param sourceNodeId - Kaynak node ID'si
+   * @param targetNodeId - Hedef node ID'si
+   * @returns boolean - Aynı departmandaysa true, değilse false
+   */
   const checkSameDepartment = useCallback(
     (sourceNodeId: string, targetNodeId: string): boolean => {
       const sourceNode = nodes.find((node) => node.id === sourceNodeId);
