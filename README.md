@@ -262,7 +262,7 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosy
 
 ## 👨‍💻 Geliştirici
 
-**Hilal** - _Full Stack Developer_
+**Hilal Dedek** - _Full Stack Developer_
 
 - GitHub: [@hilal](https://github.com/hilaldedek)
 - LinkedIn: [Hilal](https://www.linkedin.com/in/hil%C3%A2ldedek/)
